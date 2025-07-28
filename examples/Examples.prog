@@ -1,0 +1,239 @@
+{ Reflexive-Transitive Closure }
+{ simple iteration computing the powers R^0, R^1, R^2, R^3, ... }
+
+RTC1(R)
+  DECL P,Q,S
+  BEG
+    P = I(R)            { P = current power of R }
+    Q = O(R)            { Q = previous value of S }
+    S = P               { S = sum of powers of R up to P }
+    WHILE -eq(Q,S) DO
+      P = P * R
+      Q = S
+      S = S | P
+    OD
+    RETURN S
+  END.
+
+{ transitive closure: powers R^1, R^2, R^3, R^4, ... }
+
+TC1(R)
+  DECL P,Q,S
+  BEG
+    P = R               { see RTC1; start with R instead of I }
+    Q = O(R)
+    S = P
+    WHILE -eq(Q,S) DO
+      P = P * R
+      Q = S
+      S = S | P
+    OD
+    RETURN S
+  END.
+
+{ repeated squaring }
+
+RTC2(R)
+  DECL Q,S
+  BEG
+    Q = O(R)            { Q = previous value of S }
+    S = I(R) | R        { S = sum of powers of R }
+    WHILE -eq(Q,S) DO
+      Q = S
+      S = S * S
+    OD
+    RETURN S
+  END.
+
+{ Warshall's algorithm }
+
+RTC3(R)
+  DECL P,Q,S
+  BEG
+    S = R
+    Q = L(R)                       { Q = nodes not yet considered }
+    WHILE -empty(Q) DO
+      P = point(Q)                 { select a node P }
+      S = S | (S * P) * (P^ * S)   { use P as intermediate node }
+      Q = Q & -P
+    OD
+    RETURN S | I(R)
+  END.
+
+{ Warshall's algorithm with partial identities }
+
+RTC4(R)
+  DECL P,Q,S
+  BEG
+    S = R
+    Q = I(R)
+    WHILE -empty(Q) DO
+      P = atom(Q)
+      S = S | S * P * S
+      Q = Q & -P
+    OD
+    RETURN S | I(R)
+  END.
+
+{ Warshall's algorithm with heterogeneous vector }
+
+RTC5(R)
+  DECL P,Q,S
+  BEG
+    S = R
+    Q = Ln1(R)                     { Q = nodes not yet considered }
+    WHILE -empty(Q) DO
+      P = point(Q)                 { select a node P }
+      S = S | (S * P) * (P^ * S)   { use P as intermediate node }
+      Q = Q & -P
+    OD
+    RETURN S | I(R)
+  END.
+
+{ Nodes reachable in R from a set S of nodes }
+{ S and result are vectors }
+
+Reachable1(R,S)
+  DECL Q
+  BEG
+    Q = S                          { Q = nodes reached so far }
+    WHILE -empty(-Q & R^ * Q) DO   { any new nodes in next step? }
+      Q = Q | R^ * Q               { add nodes reached in next step }
+    OD
+    RETURN Q
+  END.
+
+Reachable2(R,S)
+  DECL Q
+  BEG
+    Q = S                      { Q = nodes reached so far }
+    WHILE -incl(R^ * Q,Q) DO   { any new nodes in next step? }
+      Q = Q | R^ * Q           { add nodes reached in next step }
+    OD
+    RETURN Q
+  END.
+
+Reachable3(R,S)
+  DECL P,Q
+  BEG
+    Q = S                { Q = nodes reached so far }
+    P = -S & R^ * S      { P = new nodes in next step }
+    WHILE -empty(P) DO   { any new nodes? }
+      Q = Q | P          { add new nodes }
+      P = -Q & R^ * P    { new nodes reached in next step }
+    OD
+    RETURN Q
+  END.
+
+{ Test for absence of cycles }
+
+Acyclic1(R) = incl(trans(R),-I(R)).
+
+Acyclic2(R)
+  DECL Q,S
+  BEG
+    Q = L(R)            { Q = previous value of S }
+    S = R * Q           { S = nodes with paths of length 1 }
+    WHILE -eq(Q,S) DO
+      Q = S
+      S = R * S         { increase length of paths by 1 }
+    OD
+    RETURN empty(S)
+  END.
+
+{ Transitive reduction }
+
+TRedAcyclic1(R) = R & -(R * trans(R)).
+
+{ acyclic graphs: Warshall's algorithm inverted }
+
+TRedAcyclic2(R)
+  DECL P,Q,S
+  BEG
+    S = trans(R)
+    Q = L(R)                          { Q = nodes not yet considered }
+    WHILE -empty(Q) DO
+      P = point(Q)                    { select a node P }
+      S = S & -((S * P) * (P^ * S))   { use P as intermediate node }
+      Q = Q & -P
+    OD
+    RETURN S
+  END.
+
+{ Greedy algorithm for general graphs }
+
+TRed(R)
+  DECL P,Q,S
+  BEG
+    Q = R                                   { Q = elements left to try }
+    S = R                                   { S = transitive reduction }
+    WHILE -empty(Q) DO
+      P = atom(Q)                           { select an element P }
+      IF eq(refl(trans(S & -P)),refl(trans(R))) THEN
+        S = S & -P                          { remove P, if possible }
+      FI
+      Q = Q & -P
+    OD
+    RETURN S
+  END.
+
+{ Linear Extension }
+
+Szpilrajn(R)
+  DECL Q,S
+  BEG
+    S = R                        { S = linear extension of R }
+    WHILE -empty(-(S | S^)) DO   { is S not connex? }
+      Q = atom(-(S | S^))        { select incomparable pair }
+      S = S | S * Q * S          { add pair and transitive edges }
+    OD
+    RETURN S
+  END.
+
+{ Topological sort }
+
+Min(R,S) = S & -(R^ * S).
+
+TopSort(R)
+  DECL P,Q,S
+  BEG
+    S = I(R)                 { S = linear order }
+    Q = O(R)                 { Q = nodes already considered }
+    WHILE -empty(-Q) DO
+      P = point(Min(R,-Q))   { P = R-minimal source in complement of Q }
+      S = S | Q * P^         { add edges from all nodes in Q to P }
+      Q = Q | P
+    OD
+    RETURN S
+  END.
+
+{ Spanning tree: Prim's algorithm }
+
+Prim(R)
+  DECL P,Q,S
+  BEG
+    S = O(R)                  { S = spanning tree }
+    Q = point(R * Ln1(R))     { Q = nodes already considered }
+    WHILE -empty(-Q) DO
+      P = atom(Q * -Q^ & R)   { P = some edge from Q to its complement }
+      S = S | P
+      Q = Q | P^ * Ln1(R)     { add target of edge P to Q }
+    OD
+    RETURN S
+  END.
+
+{ Equivalence classes }
+
+Classes(R)
+  DECL P,Q,S
+  BEG
+    P = point(Ln1(R))        { P = element not yet considered }
+    S = R * P                { S = column with class of P }
+    Q = -(R * P)             { Q = elements not yet considered }
+    WHILE -empty(Q) DO
+      P = point(Q)
+      S = (S^ + (R * P)^)^   { add column with class of P }
+      Q = Q & -(R * P)
+    OD
+    RETURN S
+  END.
