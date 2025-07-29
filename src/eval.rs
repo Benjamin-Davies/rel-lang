@@ -127,6 +127,20 @@ impl Locals {
     pub fn assign(&mut self, name: &str, value: Relation) {
         self.relations.insert(name.to_owned(), Some(value));
     }
+
+    pub fn get(&self, name: &str) -> Result<Relation, Error> {
+        self.relations
+            .get(name)
+            .cloned()
+            .ok_or_else(|| Error::UnknownLocal {
+                name: name.to_owned(),
+            })
+            .and_then(|v| {
+                v.ok_or_else(|| Error::UninitializedLocal {
+                    name: name.to_owned(),
+                })
+            })
+    }
 }
 
 impl Function {
@@ -258,16 +272,7 @@ fn eval_stmt(
 
 pub fn eval(globals: &Globals, locals: &Locals, expr: &ast::Expr) -> Result<Relation, Error> {
     match expr {
-        ast::Expr::Ident { ident } => locals
-            .relations
-            .get(ident)
-            .cloned()
-            .ok_or_else(|| Error::UnknownLocal {
-                name: ident.clone(),
-            })?
-            .ok_or_else(|| Error::UninitializedLocal {
-                name: ident.clone(),
-            }),
+        ast::Expr::Ident { ident } => locals.get(ident),
         ast::Expr::Call { func, args } => {
             let func = globals
                 .functions
