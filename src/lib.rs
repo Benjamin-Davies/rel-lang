@@ -6,6 +6,7 @@ use snafu::Snafu;
 use crate::{eval::Globals, parser::parse_program};
 
 pub mod ast;
+pub mod display;
 pub mod eval;
 pub mod parser;
 pub mod relation;

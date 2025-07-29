@@ -131,7 +131,7 @@ impl Relation {
         }
     }
 
-    fn contains(&self, pair: (Element, Element)) -> bool {
+    pub fn contains(&self, pair: (Element, Element)) -> bool {
         match &self.storage {
             Storage::Empty => false,
             Storage::Identity => pair.0 == pair.1,
@@ -140,7 +140,7 @@ impl Relation {
         }
     }
 
-    fn iter(&self) -> impl Iterator<Item = (Element, Element)> {
+    pub fn iter(&self) -> impl Iterator<Item = (Element, Element)> {
         enum Iter<'a> {
             Empty,
             Identity(ops::Range<u32>),
