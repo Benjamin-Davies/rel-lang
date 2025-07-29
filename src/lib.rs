@@ -2,6 +2,7 @@ use std::{fs, ops};
 
 use chumsky::prelude::*;
 use itertools::Itertools;
+use snafu::Snafu;
 
 use crate::{eval::Globals, parser::parse};
 
@@ -10,6 +11,14 @@ pub mod eval;
 mod lexer;
 pub mod parser;
 pub mod relation;
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(transparent)]
+    IO { source: std::io::Error },
+    #[snafu(transparent)]
+    Parse { source: parser::Error },
+}
 
 type Span = SimpleSpan;
 type Spanned<T> = (T, Span);
@@ -27,8 +36,9 @@ fn iter_domain_product(domain: (Domain, Domain)) -> impl Iterator<Item = (Elemen
     x_iter.cartesian_product(y_iter)
 }
 
-pub fn load_file(filename: &str, globals: &mut Globals) {
-    let src = fs::read_to_string(filename).unwrap();
-    let program = parse(filename, &src);
+pub fn load_file(filename: &str, globals: &mut Globals) -> Result<(), Error> {
+    let src = fs::read_to_string(filename)?;
+    let program = parse(filename, &src)?;
     globals.extend(program.items);
+    Ok(())
 }

@@ -4,15 +4,26 @@ use std::{
     ops::{self, ControlFlow},
 };
 
-use crate::{ast, relation::Relation};
+use snafu::Snafu;
 
-#[derive(Debug)]
+use crate::{Domain, ast, relation::Relation};
+
+#[derive(Debug, Snafu)]
 pub enum Error {
-    ArityMismatch,
-    DomainMismatch,
-    UnknownLocal,
-    UninitializedLocal,
+    #[snafu(display("Arity mismatch: expected {expected} args, got {actual} args"))]
+    ArityMismatch { expected: usize, actual: usize },
+    #[snafu(display("Domain mismatch: expected {expected:?}, got {actual:?}",))]
+    DomainMismatch {
+        expected: (Domain, Domain),
+        actual: (Domain, Domain),
+    },
+    #[snafu(display("Unknown local variable: {name}"))]
+    UnknownLocal { name: String },
+    #[snafu(display("Uninitialized local variable: {name}"))]
+    UninitializedLocal { name: String },
+    #[snafu(display("Unknown function: {name}"))]
     UnknownFunction { name: String },
+    #[snafu(display("Procedure did not return a value"))]
     ProcedureDidNotReturn,
 }
 
@@ -53,7 +64,10 @@ impl Globals {
         self.register_builtin("I", |[r]| {
             let (x_domain, y_domain) = r.domain();
             if x_domain != y_domain {
-                return Err(Error::DomainMismatch);
+                return Err(Error::DomainMismatch {
+                    expected: (x_domain, x_domain),
+                    actual: (x_domain, y_domain),
+                });
             }
             Ok(Relation::identity(x_domain))
         });
@@ -61,7 +75,10 @@ impl Globals {
         self.register_builtin("eq", |[lhs, rhs]| {
             dbg!(&lhs, &rhs);
             if lhs.domain() != rhs.domain() {
-                return Err(Error::DomainMismatch);
+                return Err(Error::DomainMismatch {
+                    expected: lhs.domain(),
+                    actual: rhs.domain(),
+                });
             }
             Ok(dbg!(Relation::from(lhs == rhs)))
         });
@@ -73,7 +90,12 @@ impl Globals {
         f: impl Fn([Relation; N]) -> Result<Relation, Error> + 'static,
     ) {
         let function = Box::new(move |args: Vec<Relation>| {
-            let args = args.try_into().map_err(|_| Error::ArityMismatch)?;
+            let args = args
+                .try_into()
+                .map_err(|args: Vec<_>| Error::ArityMismatch {
+                    expected: N,
+                    actual: args.len(),
+                })?;
             f(args)
         });
         let inserted = self
@@ -119,7 +141,10 @@ impl Function {
                     body,
                 } => {
                     if params.len() != args.len() {
-                        return Err(Error::ArityMismatch);
+                        return Err(Error::ArityMismatch {
+                            expected: params.len(),
+                            actual: args.len(),
+                        });
                     }
                     let mut locals = Locals::default();
                     for (param, arg) in params.iter().zip(args) {
@@ -142,7 +167,10 @@ impl Function {
                     value,
                 } => {
                     if params.len() != args.len() {
-                        return Err(Error::ArityMismatch);
+                        return Err(Error::ArityMismatch {
+                            expected: params.len(),
+                            actual: args.len(),
+                        });
                     }
                     let mut locals = Locals::default();
                     for (param, arg) in params.iter().zip(args) {
@@ -175,7 +203,7 @@ fn eval_stmt(
     match stmt {
         ast::Stmt::Assign { lhs, rhs } => {
             if !locals.relations.contains_key(lhs) {
-                return ops::ControlFlow::Break(Err(Error::UnknownLocal));
+                return ops::ControlFlow::Break(Err(Error::UnknownLocal { name: lhs.clone() }));
             }
 
             let value = match eval(globals, locals, rhs) {
@@ -234,8 +262,12 @@ pub fn eval(globals: &Globals, locals: &Locals, expr: &ast::Expr) -> Result<Rela
             .relations
             .get(ident)
             .cloned()
-            .ok_or(Error::UnknownLocal)?
-            .ok_or(Error::UninitializedLocal),
+            .ok_or_else(|| Error::UnknownLocal {
+                name: ident.clone(),
+            })?
+            .ok_or_else(|| Error::UninitializedLocal {
+                name: ident.clone(),
+            }),
         ast::Expr::Call { func, args } => {
             let func = globals
                 .functions
@@ -256,19 +288,28 @@ pub fn eval(globals: &Globals, locals: &Locals, expr: &ast::Expr) -> Result<Rela
             match op {
                 ast::BinOp::Union => {
                     if lhs.domain() != rhs.domain() {
-                        return Err(Error::DomainMismatch);
+                        return Err(Error::DomainMismatch {
+                            expected: lhs.domain(),
+                            actual: rhs.domain(),
+                        });
                     }
                     Ok(lhs | rhs)
                 }
                 ast::BinOp::Intersect => {
                     if lhs.domain() != rhs.domain() {
-                        return Err(Error::DomainMismatch);
+                        return Err(Error::DomainMismatch {
+                            expected: lhs.domain(),
+                            actual: rhs.domain(),
+                        });
                     }
                     Ok(lhs & rhs)
                 }
                 ast::BinOp::Compose => {
                     if lhs.domain().1 != rhs.domain().0 {
-                        return Err(Error::DomainMismatch);
+                        return Err(Error::DomainMismatch {
+                            expected: (lhs.domain().1, rhs.domain().1),
+                            actual: rhs.domain(),
+                        });
                     }
                     Ok(lhs * rhs)
                 }
@@ -282,8 +323,8 @@ pub fn eval(globals: &Globals, locals: &Locals, expr: &ast::Expr) -> Result<Rela
 impl fmt::Debug for Function {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Function::BuiltIn(name, _) => write!(f, "BuiltIn({name})"),
-            Function::Custom(item) => write!(f, "Custom({item:?})"),
+            Function::BuiltIn(name, _) => write!(f, "<builtin-function {name}>"),
+            Function::Custom(item) => write!(f, "<function {item:?}>"),
         }
     }
 }

@@ -8,7 +8,7 @@ fn main() {
         .expect("Please provide a filename as the first argument");
 
     let mut globals = Globals::default();
-    load_file(&filename, &mut globals);
+    load_file(&filename, &mut globals).unwrap();
 
     todo!();
 }

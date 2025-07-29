@@ -1,26 +1,43 @@
 use ariadne::{Color, Label, Report, ReportKind, sources};
 use chumsky::{input::ValueInput, prelude::*};
+use snafu::Snafu;
 
 use crate::{
-    Span,
+    Span, Spanned,
     ast::{self, BinOp, Expr},
     lexer::{Token, lexer},
 };
 
-pub fn parse(filename: &str, src: &str) -> ast::Program {
+#[derive(Debug, Clone, Snafu)]
+#[snafu(display("Error while parsing"))]
+pub struct Error;
+
+pub fn parse(filename: &str, src: &str) -> Result<ast::Program, Error> {
+    parse_inner(filename, src, |tokens| {
+        program().parse(tokens.map((src.len()..src.len()).into(), |(t, s)| (t, s)))
+    })
+}
+
+pub fn parse_expr(src: &str) -> Result<ast::Expr, Error> {
+    parse_inner("<expr>", src, |tokens| {
+        expr().parse(tokens.map((src.len()..src.len()).into(), |(t, s)| (t, s)))
+    })
+}
+
+fn parse_inner<T>(
+    filename: &str,
+    src: &str,
+    parser: impl for<'tokens, 'src> Fn(
+        &'tokens [Spanned<Token<'src>>],
+    ) -> ParseResult<T, Rich<'tokens, Token<'src>>>,
+) -> Result<T, Error> {
     let (tokens, errs) = lexer().parse(src).into_output_errors();
 
     let parse_errs = if let Some(tokens) = &tokens {
-        let (ast, parse_errs) = program()
-            .parse(
-                tokens
-                    .as_slice()
-                    .map((src.len()..src.len()).into(), |(t, s)| (t, s)),
-            )
-            .into_output_errors();
+        let (ast, parse_errs) = parser(tokens).into_output_errors();
 
         if let Some(ast) = ast.filter(|_| errs.is_empty() && parse_errs.is_empty()) {
-            return ast;
+            return Ok(ast);
         }
 
         parse_errs
@@ -29,38 +46,11 @@ pub fn parse(filename: &str, src: &str) -> ast::Program {
     };
 
     handle_errors(filename, src, errs, parse_errs);
+
+    Err(Error)
 }
 
-pub fn parse_expr(src: &str) -> ast::Expr {
-    let (tokens, errs) = lexer().parse(src).into_output_errors();
-
-    let parse_errs = if let Some(tokens) = &tokens {
-        let (ast, parse_errs) = expr()
-            .parse(
-                tokens
-                    .as_slice()
-                    .map((src.len()..src.len()).into(), |(t, s)| (t, s)),
-            )
-            .into_output_errors();
-
-        if let Some(ast) = ast.filter(|_| errs.is_empty() && parse_errs.is_empty()) {
-            return ast;
-        }
-
-        parse_errs
-    } else {
-        Vec::new()
-    };
-
-    handle_errors("<expr>", src, errs, parse_errs);
-}
-
-fn handle_errors(
-    filename: &str,
-    src: &str,
-    errs: Vec<Rich<'_, char>>,
-    parse_errs: Vec<Rich<'_, Token<'_>>>,
-) -> ! {
+fn handle_errors(filename: &str, src: &str, errs: Vec<Rich<char>>, parse_errs: Vec<Rich<Token>>) {
     let filename = filename.to_owned();
     let src = src.to_owned();
     errs.into_iter()
@@ -88,7 +78,6 @@ fn handle_errors(
                 .print(sources([(filename.clone(), src.clone())]))
                 .unwrap()
         });
-    panic!("Parsing failed with errors");
 }
 
 fn program<'tokens, 'src: 'tokens, I>()
@@ -263,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_parse_examples() {
-        let ast = parse("Examples.prog", include_str!("../examples/Examples.prog"));
+        let ast = parse("Examples.prog", include_str!("../examples/Examples.prog")).unwrap();
 
         assert_eq!(ast.items.len(), 19);
     }
