@@ -2,7 +2,7 @@ use std::fmt;
 
 use chumsky::prelude::*;
 
-use crate::{Span, Spanned};
+use crate::parser::{Span, Spanned};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token<'src> {
@@ -84,12 +84,12 @@ impl fmt::Display for Token<'_> {
 mod tests {
     use chumsky::Parser;
 
-    use crate::lexer::{Token, lexer};
+    use crate::parser::lexer::{Token, lexer};
 
     #[test]
     fn test_lex_examples() {
         let tokens = lexer()
-            .parse(include_str!("../examples/Examples.prog"))
+            .parse(include_str!("../../examples/Examples.prog"))
             .unwrap();
 
         assert_eq!(tokens.len(), 951);

@@ -3,16 +3,21 @@ use chumsky::{input::ValueInput, prelude::*};
 use snafu::Snafu;
 
 use crate::{
-    Span, Spanned,
     ast::{self, BinOp, Expr},
-    lexer::{Token, lexer},
+    parser::lexer::{Token, lexer},
 };
+
+mod lexer;
+pub mod relation;
 
 #[derive(Debug, Clone, Snafu)]
 #[snafu(display("Error while parsing"))]
 pub struct Error;
 
-pub fn parse(filename: &str, src: &str) -> Result<ast::Program, Error> {
+type Span = SimpleSpan;
+type Spanned<T> = (T, Span);
+
+pub fn parse_program(filename: &str, src: &str) -> Result<ast::Program, Error> {
     parse_inner(filename, src, |tokens| {
         program().parse(tokens.map((src.len()..src.len()).into(), |(t, s)| (t, s)))
     })
@@ -255,11 +260,15 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse;
+    use crate::parser::parse_program;
 
     #[test]
     fn test_parse_examples() {
-        let ast = parse("Examples.prog", include_str!("../examples/Examples.prog")).unwrap();
+        let ast = parse_program(
+            "Examples.prog",
+            include_str!("../../examples/Examples.prog"),
+        )
+        .unwrap();
 
         assert_eq!(ast.items.len(), 19);
     }
