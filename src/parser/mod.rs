@@ -8,6 +8,7 @@ use crate::{
 };
 
 mod lexer;
+pub mod matrix;
 pub mod relation;
 
 #[derive(Debug, Clone, Snafu)]
