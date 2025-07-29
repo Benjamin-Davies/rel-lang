@@ -7,7 +7,7 @@ use crate::{
     lexer::{Token, lexer},
 };
 
-pub fn parse<'src>(filename: &str, src: &'src str) -> ast::Program<'src> {
+pub fn parse(filename: &str, src: &str) -> ast::Program {
     let (tokens, errs) = lexer().parse(src).into_output_errors();
 
     let parse_errs = if let Some(tokens) = &tokens {
@@ -28,6 +28,39 @@ pub fn parse<'src>(filename: &str, src: &'src str) -> ast::Program<'src> {
         Vec::new()
     };
 
+    handle_errors(filename, src, errs, parse_errs);
+}
+
+pub fn parse_expr(src: &str) -> ast::Expr {
+    let (tokens, errs) = lexer().parse(src).into_output_errors();
+
+    let parse_errs = if let Some(tokens) = &tokens {
+        let (ast, parse_errs) = expr()
+            .parse(
+                tokens
+                    .as_slice()
+                    .map((src.len()..src.len()).into(), |(t, s)| (t, s)),
+            )
+            .into_output_errors();
+
+        if let Some(ast) = ast.filter(|_| errs.is_empty() && parse_errs.is_empty()) {
+            return ast;
+        }
+
+        parse_errs
+    } else {
+        Vec::new()
+    };
+
+    handle_errors("<expr>", src, errs, parse_errs);
+}
+
+fn handle_errors(
+    filename: &str,
+    src: &str,
+    errs: Vec<Rich<'_, char>>,
+    parse_errs: Vec<Rich<'_, Token<'_>>>,
+) -> ! {
     let filename = filename.to_owned();
     let src = src.to_owned();
     errs.into_iter()
@@ -59,11 +92,11 @@ pub fn parse<'src>(filename: &str, src: &'src str) -> ast::Program<'src> {
 }
 
 fn program<'tokens, 'src: 'tokens, I>()
--> impl Parser<'tokens, I, ast::Program<'src>, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
+-> impl Parser<'tokens, I, ast::Program, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
 where
     I: ValueInput<'tokens, Token = Token<'src>, Span = Span>,
 {
-    let ident = select! { Token::Ident(ident) => ident };
+    let ident = select! { Token::Ident(ident) => ident.to_owned() };
 
     let params = ident
         .separated_by(just(Token::Ctrl(',')))
@@ -107,12 +140,12 @@ where
 }
 
 fn stmt<'tokens, 'src: 'tokens, I>()
--> impl Parser<'tokens, I, ast::Stmt<'src>, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
+-> impl Parser<'tokens, I, ast::Stmt, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
 where
     I: ValueInput<'tokens, Token = Token<'src>, Span = Span>,
 {
     recursive(|stmt| {
-        let ident = select! { Token::Ident(ident) => ident };
+        let ident = select! { Token::Ident(ident) => ident.to_owned() };
 
         let assign = ident
             .then_ignore(just(Token::Op('=')))
@@ -140,9 +173,9 @@ where
                     .or_not(),
             )
             .then_ignore(just(Token::Fi))
-            .map(|((cond, body), else_body)| ast::Stmt::If {
+            .map(|((cond, then_body), else_body)| ast::Stmt::If {
                 cond,
-                body,
+                then_body,
                 else_body,
             });
 
@@ -151,12 +184,12 @@ where
 }
 
 fn expr<'tokens, 'src: 'tokens, I>()
--> impl Parser<'tokens, I, Expr<'src>, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
+-> impl Parser<'tokens, I, Expr, extra::Err<Rich<'tokens, Token<'src>, Span>>> + Clone
 where
     I: ValueInput<'tokens, Token = Token<'src>, Span = Span>,
 {
     recursive(|expr| {
-        let ident = select! { Token::Ident(ident) => ident };
+        let ident = select! { Token::Ident(ident) => ident.to_owned() };
         let ident_expr = ident.map(|ident| Expr::Ident { ident });
 
         let call = ident

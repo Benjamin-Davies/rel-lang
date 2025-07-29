@@ -1,62 +1,62 @@
 #[derive(Debug)]
-pub struct Program<'src> {
-    pub items: Vec<Item<'src>>,
+pub struct Program {
+    pub items: Vec<Item>,
 }
 
 #[derive(Debug)]
-pub enum Item<'src> {
+pub enum Item {
     Procedure {
-        name: &'src str,
-        params: Vec<&'src str>,
-        decls: Vec<&'src str>,
-        body: Vec<Stmt<'src>>,
+        name: String,
+        params: Vec<String>,
+        decls: Vec<String>,
+        body: Vec<Stmt>,
     },
     Function {
-        name: &'src str,
-        params: Vec<&'src str>,
-        value: Expr<'src>,
+        name: String,
+        params: Vec<String>,
+        value: Expr,
     },
 }
 
 #[derive(Debug)]
-pub enum Stmt<'src> {
+pub enum Stmt {
     Assign {
-        lhs: &'src str,
-        rhs: Expr<'src>,
+        lhs: String,
+        rhs: Expr,
     },
     While {
-        cond: Expr<'src>,
-        body: Vec<Stmt<'src>>,
+        cond: Expr,
+        body: Vec<Stmt>,
     },
     Return {
-        value: Expr<'src>,
+        value: Expr,
     },
     If {
-        cond: Expr<'src>,
-        body: Vec<Stmt<'src>>,
-        else_body: Option<Vec<Stmt<'src>>>,
+        cond: Expr,
+        then_body: Vec<Stmt>,
+        else_body: Option<Vec<Stmt>>,
     },
 }
 
 #[derive(Debug)]
-pub enum Expr<'src> {
+pub enum Expr {
     Ident {
-        ident: &'src str,
+        ident: String,
     },
     Call {
-        func: &'src str,
-        args: Vec<Expr<'src>>,
+        func: String,
+        args: Vec<Expr>,
     },
     Negate {
-        value: Box<Expr<'src>>,
+        value: Box<Expr>,
     },
     BinExpr {
-        left: Box<Expr<'src>>,
+        left: Box<Expr>,
         op: BinOp,
-        right: Box<Expr<'src>>,
+        right: Box<Expr>,
     },
     Transpose {
-        value: Box<Expr<'src>>,
+        value: Box<Expr>,
     },
 }
 
@@ -66,4 +66,13 @@ pub enum BinOp {
     Intersect,
     Compose,
     Sum,
+}
+
+impl Item {
+    pub fn name(&self) -> &str {
+        match self {
+            Item::Procedure { name, .. } => name,
+            Item::Function { name, .. } => name,
+        }
+    }
 }
