@@ -73,14 +73,13 @@ impl Globals {
         });
 
         self.register_builtin("eq", |[lhs, rhs]| {
-            dbg!(&lhs, &rhs);
             if lhs.domain() != rhs.domain() {
                 return Err(Error::DomainMismatch {
                     expected: lhs.domain(),
                     actual: rhs.domain(),
                 });
             }
-            Ok(dbg!(Relation::from(lhs == rhs)))
+            Ok(Relation::from(lhs == rhs))
         });
     }
 
@@ -231,12 +230,10 @@ fn eval_stmt(
             ops::ControlFlow::Continue(())
         }
         ast::Stmt::While { cond, body } => loop {
-            dbg!(cond);
             let cond_value = match eval(globals, locals, cond) {
                 Ok(v) => v,
                 Err(e) => return ops::ControlFlow::Break(Err(e)),
             };
-            dbg!(&cond_value);
             if cond_value.is_empty() {
                 break ControlFlow::Continue(());
             }
