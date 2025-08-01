@@ -20,6 +20,8 @@ const HELP_MESSAGE: &str = "Available commands:\n\
     .save rel <variable> <filename> - Save a relation to a file\n\
     .save mat <variable> <filename> - Save a matrix to a file";
 
+pub const COMMANDS: &[&str] = &["help", "exit", "clear", "load", "save"];
+
 pub struct Repl {
     globals: Globals,
     locals: Locals,

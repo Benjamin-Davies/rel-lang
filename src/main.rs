@@ -3,11 +3,14 @@ use std::{
     ops,
 };
 
-use rel_lang::repl::Repl;
+use rel_lang::{repl::Repl, repl_helper::ReplHelper};
+use rustyline::{Editor, Result, error::ReadlineError};
 
-fn main() -> Result<(), io::Error> {
-    let stdin = io::stdin();
+fn main() -> Result<()> {
     let mut stdout = io::stdout();
+
+    let mut rl = Editor::new()?;
+    rl.set_helper(Some(ReplHelper));
 
     let mut repl = Repl::new();
     repl.welcome(&mut stdout)?;
@@ -16,11 +19,14 @@ fn main() -> Result<(), io::Error> {
         stdout.write_all(b"> ")?;
         stdout.flush()?;
 
-        let mut line = String::new();
-        stdin.read_line(&mut line)?;
-        if line.is_empty() {
-            break; // Exit on EOF
-        }
+        let line = match rl.readline("> ") {
+            Ok(line) => {
+                rl.add_history_entry(line.as_str())?;
+                line
+            }
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
+            Err(err) => return Err(err),
+        };
 
         let res = repl.process_input(&line, &mut stdout)?;
 
