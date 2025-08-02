@@ -10,7 +10,7 @@ fn main() -> Result<()> {
     let mut stdout = io::stdout();
 
     let mut rl = Editor::new()?;
-    rl.set_helper(Some(ReplHelper));
+    rl.set_helper(Some(ReplHelper::new()));
 
     let mut repl = Repl::new();
     repl.welcome(&mut stdout)?;
