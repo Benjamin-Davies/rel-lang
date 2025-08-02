@@ -141,7 +141,7 @@ impl Locals {
             })
     }
 
-    pub fn get_by_prefix(&self, prefix: &str) -> impl Iterator<Item = &str> {
+    pub fn variables_by_prefix(&self, prefix: &str) -> impl Iterator<Item = &str> {
         self.relations
             .range(prefix.to_owned()..)
             .map(|(name, _)| name.as_str())

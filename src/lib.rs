@@ -14,6 +14,7 @@ pub mod eval;
 pub mod parser;
 pub mod relation;
 pub mod repl;
+pub mod repl_commands;
 pub mod repl_helper;
 
 #[derive(Debug, Snafu)]
