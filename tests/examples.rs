@@ -1,90 +1,134 @@
-use rel_lang::{
-    eval::{Globals, Locals, eval},
-    load_file,
-    parser::parse_expr,
-    relation::Relation,
-};
+use rel_lang::repl::Repl;
 
-#[test]
-fn test_example_rtc1() {
-    let mut globals = Globals::default();
-    load_file("examples/Examples.prog", &mut globals).unwrap();
+macro_rules! test {
+    ($name:ident, $input:literal, $expected:literal) => {
+        #[test]
+        fn $name() {
+            let input: &str = $input;
+            let expected: &str = $expected;
 
-    let mut locals = Locals::default();
-    let input = Relation::sparse((..5, ..5), [(0, 1), (1, 2), (2, 3), (3, 4), (3, 1)]);
-    locals.assign("R", input);
+            let mut repl = Repl::new();
+            let mut output = Vec::new();
+            for line in input.lines() {
+                repl.process_input(line, &mut output).unwrap();
+            }
 
-    let expr = parse_expr("RTC1(R)").unwrap();
-    let result = eval(&globals, &locals, &expr).unwrap();
-
-    let expected = Relation::sparse(
-        (..5, ..5),
-        [
-            // Row 0
-            (0, 0),
-            (0, 1),
-            (0, 2),
-            (0, 3),
-            (0, 4),
-            // Row 1
-            (1, 1),
-            (1, 2),
-            (1, 3),
-            (1, 4),
-            // Row 2
-            (2, 1),
-            (2, 2),
-            (2, 3),
-            (2, 4),
-            // Row 3
-            (3, 1),
-            (3, 2),
-            (3, 3),
-            (3, 4),
-            // Row 4
-            (4, 4),
-        ],
-    );
-    assert_eq!(result, expected);
+            pretty_assertions::assert_eq!(
+                String::from_utf8(output).unwrap().trim(),
+                expected.trim(),
+            );
+        }
+    };
 }
 
-#[test]
-fn test_example_tc1() {
-    let mut globals = Globals::default();
-    load_file("examples/Examples.prog", &mut globals).unwrap();
+test!(
+    test_example_rtc1,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+RTC1(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 1, 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+5 : 5
+"#
+);
 
-    let mut locals = Locals::default();
-    let input = Relation::sparse((..5, ..5), [(0, 1), (1, 2), (2, 3), (3, 4), (3, 1)]);
-    locals.assign("R", input);
+test!(
+    test_example_tc1,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+TC1(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+"#
+);
+test!(
+    test_example_rtc2,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+RTC2(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 1, 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+5 : 5
+"#
+);
 
-    let expr = parse_expr("TC1(R)").unwrap();
-    let result = eval(&globals, &locals, &expr).unwrap();
+// test!(
+//     test_example_rtc3,
+//     r#"
+// .load prog examples/Examples.prog
+// .load rel examples/R1.ascii
+// RTC3(R1)
+// "#,
+//     r#"
+// Program loaded successfully from 'examples/Examples.prog'
+// Relation 'R1' loaded successfully from 'examples/R1.ascii'
+// <expr> (5, 5)
+// 1 : 1, 2, 3, 4, 5
+// 2 : 2, 3, 4, 5
+// 3 : 2, 3, 4, 5
+// 4 : 2, 3, 4, 5
+// 5 : 5
+// "#
+// );
 
-    let expected = Relation::sparse(
-        (..5, ..5),
-        [
-            // Row 0
-            (0, 1),
-            (0, 2),
-            (0, 3),
-            (0, 4),
-            // Row 1
-            (1, 1),
-            (1, 2),
-            (1, 3),
-            (1, 4),
-            // Row 2
-            (2, 1),
-            (2, 2),
-            (2, 3),
-            (2, 4),
-            // Row 3
-            (3, 1),
-            (3, 2),
-            (3, 3),
-            (3, 4),
-            // Row 4
-        ],
-    );
-    assert_eq!(result, expected);
-}
+// test!(
+//     test_example_rtc4,
+//     r#"
+// .load prog examples/Examples.prog
+// .load rel examples/R1.ascii
+// RTC4(R1)
+// "#,
+//     r#"
+// Program loaded successfully from 'examples/Examples.prog'
+// Relation 'R1' loaded successfully from 'examples/R1.ascii'
+// <expr> (5, 5)
+// 1 : 1, 2, 3, 4, 5
+// 2 : 2, 3, 4, 5
+// 3 : 2, 3, 4, 5
+// 4 : 2, 3, 4, 5
+// 5 : 5
+// "#
+// );
+
+// test!(
+//     test_example_rtc5,
+//     r#"
+// .load prog examples/Examples.prog
+// .load rel examples/R1.ascii
+// RTC5(R1)
+// "#,
+//     r#"
+// Program loaded successfully from 'examples/Examples.prog'
+// Relation 'R1' loaded successfully from 'examples/R1.ascii'
+// <expr> (5, 5)
+// 1 : 1, 2, 3, 4, 5
+// 2 : 2, 3, 4, 5
+// 3 : 2, 3, 4, 5
+// 4 : 2, 3, 4, 5
+// 5 : 5
+// "#
+// );

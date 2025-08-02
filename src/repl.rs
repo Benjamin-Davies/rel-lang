@@ -42,6 +42,9 @@ impl Repl {
         line: &str,
         mut out: impl io::Write,
     ) -> io::Result<ops::ControlFlow<()>> {
+        if line.is_empty() {
+            return Ok(ops::ControlFlow::Continue(()));
+        }
         if line.starts_with('.') {
             return self.process_command(line, &mut out);
         }
@@ -53,7 +56,8 @@ impl Repl {
         let result = eval(&self.state.globals, &self.state.locals, &expr);
         match result {
             Ok(value) => {
-                writeln!(out, "{}", value.display("<expr>"))?;
+                // Relation::display already adds a newline.
+                write!(out, "{}", value.display("<expr>"))?;
                 self.state.last_result = Some(value);
             }
             Err(e) => writeln!(out, "Error: {e}")?,
