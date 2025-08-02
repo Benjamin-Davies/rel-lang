@@ -21,8 +21,8 @@ const HELP_MESSAGE: &str = "Available commands:\n\
     .save mat <variable> <filename> - Save a matrix to a file";
 
 pub struct Repl {
-    globals: Globals,
-    locals: Locals,
+    pub globals: Globals,
+    pub locals: Locals,
     last_result: Option<Relation>,
 }
 
@@ -59,7 +59,7 @@ impl Repl {
                 self.last_result = Some(value.clone());
                 writeln!(out, "{}", value.display("<expr>"))?;
             }
-            Err(e) => writeln!(out, "Error evaluating expression: {e}")?,
+            Err(e) => writeln!(out, "Error: {e}")?,
         }
 
         Ok(ops::ControlFlow::Continue(()))

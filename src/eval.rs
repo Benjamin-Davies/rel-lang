@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt,
     ops::{self, ControlFlow},
 };
@@ -29,12 +29,12 @@ pub enum Error {
 
 #[derive(Debug)]
 pub struct Globals {
-    functions: HashMap<String, Function>,
+    functions: BTreeMap<String, Function>,
 }
 
 #[derive(Debug, Default)]
 pub struct Locals {
-    relations: HashMap<String, Option<Relation>>,
+    relations: BTreeMap<String, Option<Relation>>,
 }
 
 pub enum Function {
@@ -48,7 +48,7 @@ pub enum Function {
 impl Globals {
     fn builtins() -> Self {
         let mut globals = Self {
-            functions: HashMap::new(),
+            functions: BTreeMap::new(),
         };
         globals.register_builtins();
         globals
@@ -139,6 +139,13 @@ impl Locals {
                     name: name.to_owned(),
                 })
             })
+    }
+
+    pub fn get_by_prefix(&self, prefix: &str) -> impl Iterator<Item = &str> {
+        self.relations
+            .range(prefix.to_owned()..)
+            .map(|(name, _)| name.as_str())
+            .take_while(move |name| name.starts_with(prefix))
     }
 }
 

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use rustyline::{
     Helper, Result,
@@ -8,9 +8,12 @@ use rustyline::{
     validate::Validator,
 };
 
+use crate::repl::Repl;
+
 pub struct ReplHelper {
     filename_completer: FilenameCompleter,
     commands: Node,
+    repl: Rc<RefCell<Repl>>,
 }
 
 /// The available commands form a rooted tree where the tokens are represented by edges.
@@ -56,10 +59,11 @@ impl Node {
 }
 
 impl ReplHelper {
-    pub fn new() -> Self {
+    pub fn new(repl: Rc<RefCell<Repl>>) -> Self {
         Self {
             filename_completer: FilenameCompleter::new(),
             commands: Node::root(),
+            repl,
         }
     }
 }
@@ -106,7 +110,7 @@ impl Completer for ReplHelper {
                     if let &Edge::Keyword(keyword) = edge {
                         if keyword.starts_with(last_part) {
                             Some(Pair {
-                                display: "TODO".to_owned(),
+                                display: keyword.to_owned(),
                                 replacement: keyword.to_owned(),
                             })
                         } else {
@@ -128,7 +132,12 @@ impl Completer for ReplHelper {
             }
 
             if node.edges.contains_key(&Edge::Variable) {
-                // TODO: Implement variable completion
+                let repl = self.repl.borrow();
+                let variables = repl.locals.get_by_prefix(last_part).map(|var| Pair {
+                    display: var.to_owned(),
+                    replacement: var.to_owned(),
+                });
+                suggestions.extend(variables);
             }
 
             Ok((last_part_start, suggestions))
