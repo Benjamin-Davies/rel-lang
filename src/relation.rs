@@ -170,6 +170,15 @@ impl Relation {
             Storage::Sparse(storage) => Iter::Sparse(storage.iter()),
         }
     }
+
+    pub fn collapse_left(&self) -> Relation {
+        Relation::sparse((self.domain.0, ..1), self.iter().map(|(x, _)| (x, 0)))
+    }
+
+    pub fn choose_one(&self) -> Relation {
+        // TODO: should this be random?
+        Relation::sparse(self.domain, self.iter().take(1))
+    }
 }
 
 impl PartialEq for Relation {

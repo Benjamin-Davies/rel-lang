@@ -76,59 +76,59 @@ Relation 'R1' loaded successfully from 'examples/R1.ascii'
 "#
 );
 
-// test!(
-//     test_example_rtc3,
-//     r#"
-// .load prog examples/Examples.prog
-// .load rel examples/R1.ascii
-// RTC3(R1)
-// "#,
-//     r#"
-// Program loaded successfully from 'examples/Examples.prog'
-// Relation 'R1' loaded successfully from 'examples/R1.ascii'
-// <expr> (5, 5)
-// 1 : 1, 2, 3, 4, 5
-// 2 : 2, 3, 4, 5
-// 3 : 2, 3, 4, 5
-// 4 : 2, 3, 4, 5
-// 5 : 5
-// "#
-// );
+test!(
+    test_example_rtc3,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+RTC3(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 1, 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+5 : 5
+"#
+);
 
-// test!(
-//     test_example_rtc4,
-//     r#"
-// .load prog examples/Examples.prog
-// .load rel examples/R1.ascii
-// RTC4(R1)
-// "#,
-//     r#"
-// Program loaded successfully from 'examples/Examples.prog'
-// Relation 'R1' loaded successfully from 'examples/R1.ascii'
-// <expr> (5, 5)
-// 1 : 1, 2, 3, 4, 5
-// 2 : 2, 3, 4, 5
-// 3 : 2, 3, 4, 5
-// 4 : 2, 3, 4, 5
-// 5 : 5
-// "#
-// );
+test!(
+    test_example_rtc4,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+RTC4(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 1, 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+5 : 5
+"#
+);
 
-// test!(
-//     test_example_rtc5,
-//     r#"
-// .load prog examples/Examples.prog
-// .load rel examples/R1.ascii
-// RTC5(R1)
-// "#,
-//     r#"
-// Program loaded successfully from 'examples/Examples.prog'
-// Relation 'R1' loaded successfully from 'examples/R1.ascii'
-// <expr> (5, 5)
-// 1 : 1, 2, 3, 4, 5
-// 2 : 2, 3, 4, 5
-// 3 : 2, 3, 4, 5
-// 4 : 2, 3, 4, 5
-// 5 : 5
-// "#
-// );
+test!(
+    test_example_rtc5,
+    r#"
+.load prog examples/Examples.prog
+.load rel examples/R1.ascii
+RTC5(R1)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+<expr> (5, 5)
+1 : 1, 2, 3, 4, 5
+2 : 2, 3, 4, 5
+3 : 2, 3, 4, 5
+4 : 2, 3, 4, 5
+5 : 5
+"#
+);

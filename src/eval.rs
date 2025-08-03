@@ -17,6 +17,8 @@ pub enum Error {
         expected: (Domain, Domain),
         actual: (Domain, Domain),
     },
+    #[snafu(display("Empty relation"))]
+    EmptyRelation,
     #[snafu(display("Unknown local variable: {name}"))]
     UnknownLocal { name: String },
     #[snafu(display("Uninitialized local variable: {name}"))]
@@ -55,6 +57,8 @@ impl Globals {
     }
 
     fn register_builtins(&mut self) {
+        // https://www.informatik.uni-kiel.de/~progsys/relview/base_functions
+
         self.register_builtin("TRUE", |[]| Ok(Relation::true_relation()));
         self.register_builtin("true", |[]| Ok(Relation::true_relation()));
         self.register_builtin("FALSE", |[]| Ok(Relation::false_relation()));
@@ -71,7 +75,26 @@ impl Globals {
             }
             Ok(Relation::identity(x_domain))
         });
+        self.register_builtin("Ln1", |[r]| Ok(Relation::universal((r.domain().0, ..1))));
+        self.register_builtin("On1", |[r]| Ok(Relation::empty((r.domain().0, ..1))));
+        self.register_builtin("L1n", |[r]| Ok(Relation::universal((..1, r.domain().1))));
+        self.register_builtin("O1n", |[r]| Ok(Relation::empty((..1, r.domain().1))));
+        self.register_builtin("dom", |[r]| Ok(r.collapse_left()));
 
+        self.register_builtin("point", |[v]| {
+            if v.is_empty() {
+                return Err(Error::EmptyRelation);
+            }
+            Ok(v.choose_one())
+        });
+        self.register_builtin("atom", |[v]| {
+            if v.is_empty() {
+                return Err(Error::EmptyRelation);
+            }
+            Ok(v.choose_one())
+        });
+
+        self.register_builtin("empty", |[r]| Ok(Relation::from(r.is_empty())));
         self.register_builtin("eq", |[lhs, rhs]| {
             if lhs.domain() != rhs.domain() {
                 return Err(Error::DomainMismatch {
