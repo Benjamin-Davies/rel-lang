@@ -20,7 +20,7 @@ pub fn parse_relation(filename: &str, src: &str) -> Result<(String, Relation), E
     }
 }
 
-pub(super) fn header<'src>()
+fn header<'src>()
 -> impl Parser<'src, &'src str, (String, (Domain, Domain)), extra::Err<Rich<'src, char, Span>>> {
     text::ident()
         .then_ignore(just(" ("))

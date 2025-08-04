@@ -1,13 +1,13 @@
 use chumsky::prelude::*;
 
 use crate::{
-    parser::{Error, Span, handle_errors, relation::header},
+    parser::{Error, Span, handle_errors},
     relation::Relation,
 };
 
-pub fn parse_matrix(filename: &str, src: &str) -> Result<(String, Relation), Error> {
+pub fn parse_matrix(filename: &str, src: &str) -> Result<Relation, Error> {
     match matrix().parse(src).into_result() {
-        Ok((name, r)) => Ok((name, r)),
+        Ok(r) => Ok(r),
         Err(errs) => {
             handle_errors(
                 filename,
@@ -19,22 +19,26 @@ pub fn parse_matrix(filename: &str, src: &str) -> Result<(String, Relation), Err
     }
 }
 
-fn matrix<'src>()
--> impl Parser<'src, &'src str, (String, Relation), extra::Err<Rich<'src, char, Span>>> {
+fn matrix<'src>() -> impl Parser<'src, &'src str, Relation, extra::Err<Rich<'src, char, Span>>> {
     let c = select! { 'X' => true, ' ' => false };
+    let header = just("+")
+        .ignore_then(just("-").repeated().at_most(u32::MAX as usize).count())
+        .then_ignore(just("+\n"));
     let line = just("|")
         .ignore_then(c.repeated().at_most(u32::MAX as usize).collect::<Vec<_>>())
         .then_ignore(just("|\n"));
 
-    header()
+    header
+        .clone()
         .then(
             line.repeated()
                 .at_most(u32::MAX as usize)
                 .collect::<Vec<_>>(),
         )
-        .map(|((name, domain), lines)| {
+        .then_ignore(header)
+        .map(|(width, lines)| {
             let relation = Relation::sparse(
-                domain,
+                (..width as u32, ..lines.len() as u32),
                 lines.into_iter().enumerate().flat_map(|(i, cells)| {
                     cells
                         .into_iter()
@@ -43,7 +47,7 @@ fn matrix<'src>()
                         .map(move |(j, _)| (i as u32, j as u32))
                 }),
             );
-            (name, relation)
+            relation
         })
 }
 
@@ -53,20 +57,16 @@ mod tests {
 
     #[test]
     fn test_parse_r1_matrix() {
-        let (name, relation) =
-            parse_matrix("R1.matrix", include_str!("../../examples/R1.matrix")).unwrap();
+        let relation = parse_matrix("R1.matrix", include_str!("../../examples/R1.matrix")).unwrap();
 
-        assert_eq!(name, "R1");
         let expected = Relation::sparse((..5, ..5), [(0, 1), (1, 2), (2, 3), (3, 4), (3, 1)]);
         assert_eq!(relation, expected);
     }
 
     #[test]
     fn test_parse_r2_matrix() {
-        let (name, relation) =
-            parse_matrix("R2.matrix", include_str!("../../examples/R2.matrix")).unwrap();
+        let relation = parse_matrix("R2.matrix", include_str!("../../examples/R2.matrix")).unwrap();
 
-        assert_eq!(name, "R2");
         let expected = Relation::sparse(
             (..5, ..5),
             [
@@ -87,10 +87,8 @@ mod tests {
 
     #[test]
     fn test_parse_r3_matrix() {
-        let (name, relation) =
-            parse_matrix("R3.matrix", include_str!("../../examples/R3.matrix")).unwrap();
+        let relation = parse_matrix("R3.matrix", include_str!("../../examples/R3.matrix")).unwrap();
 
-        assert_eq!(name, "R3");
         let expected = Relation::sparse(
             (..5, ..5),
             [

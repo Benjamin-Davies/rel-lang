@@ -25,7 +25,7 @@ test!(
     test_example_rtc1,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 RTC1(R1)
 "#,
     r#"
@@ -44,7 +44,7 @@ test!(
     test_example_tc1,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 TC1(R1)
 "#,
     r#"
@@ -61,7 +61,7 @@ test!(
     test_example_rtc2,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 RTC2(R1)
 "#,
     r#"
@@ -80,7 +80,7 @@ test!(
     test_example_rtc3,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 RTC3(R1)
 "#,
     r#"
@@ -99,7 +99,7 @@ test!(
     test_example_rtc4,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 RTC4(R1)
 "#,
     r#"
@@ -118,7 +118,7 @@ test!(
     test_example_rtc5,
     r#"
 .load prog examples/Examples.prog
-.load rel examples/R1.ascii
+.load rel R1 examples/R1.ascii
 RTC5(R1)
 "#,
     r#"

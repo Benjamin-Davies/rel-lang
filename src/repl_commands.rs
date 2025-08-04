@@ -7,8 +7,8 @@ const HELP_MESSAGE: &str = "Available commands:\n\
    .exit - Exit the REPL\n\
    .store <variable> - Store the last result in a variable\n\
    .load prog <filename> - Load a program from a file\n\
-   .load rel <filename> - Load a relation from a file\n\
-   .load mat <filename> - Load a matrix from a file\n\
+   .load rel <variable> <filename> - Load a relation from a file\n\
+   .load mat <variable> <filename> - Load a matrix from a file\n\
    .save rel <variable> <filename> - Save a relation to a file\n\
    .save mat <variable> <filename> - Save a matrix to a file";
 
@@ -62,24 +62,27 @@ impl Node {
                 Ok(ops::ControlFlow::Continue(()))
             });
         load.insert(Edge::Keyword("rel"))
+            .insert(Edge::Variable)
             .insert(Edge::Filename)
-            .with_func(|state, out, [_, _, filename]| {
-                match load_relation(filename, &mut state.locals) {
-                    Ok(name) => writeln!(
+            .with_func(|state, out, [_, _, variable, filename]| {
+                match load_relation(variable, filename, &mut state.locals) {
+                    Ok(()) => writeln!(
                         out,
-                        "Relation '{name}' loaded successfully from '{filename}'"
+                        "Relation '{variable}' loaded successfully from '{filename}'"
                     )?,
                     Err(e) => writeln!(out, "Error loading relation: {e}")?,
                 }
                 Ok(ops::ControlFlow::Continue(()))
             });
         load.insert(Edge::Keyword("mat"))
+            .insert(Edge::Variable)
             .insert(Edge::Filename)
-            .with_func(|state, out, [_, _, filename]| {
-                match load_matrix(filename, &mut state.locals) {
-                    Ok(name) => {
-                        writeln!(out, "Matrix '{name}' loaded successfully from '{filename}'")?
-                    }
+            .with_func(|state, out, [_, _, variable, filename]| {
+                match load_matrix(variable, filename, &mut state.locals) {
+                    Ok(()) => writeln!(
+                        out,
+                        "Matrix '{variable}' loaded successfully from '{filename}'"
+                    )?,
                     Err(e) => writeln!(out, "Error loading matrix: {e}")?,
                 }
                 Ok(ops::ControlFlow::Continue(()))

@@ -8,7 +8,6 @@ pub struct DisplayRelation<'a> {
 }
 
 pub struct DisplayMatrix<'a> {
-    name: &'a str,
     relation: &'a Relation,
 }
 
@@ -20,11 +19,8 @@ impl Relation {
         }
     }
 
-    pub fn display_matrix<'a>(&'a self, name: &'a str) -> DisplayMatrix<'a> {
-        DisplayMatrix {
-            name,
-            relation: self,
-        }
+    pub fn display_matrix<'a>(&'a self) -> DisplayMatrix<'a> {
+        DisplayMatrix { relation: self }
     }
 }
 
@@ -57,13 +53,11 @@ impl fmt::Display for DisplayRelation<'_> {
 
 impl fmt::Display for DisplayMatrix<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(
-            f,
-            "{} ({}, {})",
-            self.name,
-            self.relation.domain().0.end,
-            self.relation.domain().1.end
-        )?;
+        write!(f, "+")?;
+        for _ in 0..self.relation.domain().1.end {
+            write!(f, "-")?;
+        }
+        writeln!(f, "+")?;
 
         for x in 0..self.relation.domain().0.end {
             write!(f, "|")?;
@@ -76,6 +70,12 @@ impl fmt::Display for DisplayMatrix<'_> {
             }
             writeln!(f, "|")?;
         }
+
+        write!(f, "+")?;
+        for _ in 0..self.relation.domain().1.end {
+            write!(f, "-")?;
+        }
+        writeln!(f, "+")?;
 
         Ok(())
     }
@@ -109,21 +109,21 @@ mod tests {
     #[test]
     fn test_display_matrix_r1() {
         let src = include_str!("../examples/R1.matrix");
-        let (name, relation) = parse_matrix("R1.matrix", src).unwrap();
-        assert_eq!(relation.display_matrix(&name).to_string(), src);
+        let relation = parse_matrix("R1.matrix", src).unwrap();
+        assert_eq!(relation.display_matrix().to_string(), src);
     }
 
     #[test]
     fn test_display_matrix_r2() {
         let src = include_str!("../examples/R2.matrix");
-        let (name, relation) = parse_matrix("R2.matrix", src).unwrap();
-        assert_eq!(relation.display_matrix(&name).to_string(), src);
+        let relation = parse_matrix("R2.matrix", src).unwrap();
+        assert_eq!(relation.display_matrix().to_string(), src);
     }
 
     #[test]
     fn test_display_matrix_r3() {
         let src = include_str!("../examples/R3.matrix");
-        let (name, relation) = parse_matrix("R3.matrix", src).unwrap();
-        assert_eq!(relation.display_matrix(&name).to_string(), src);
+        let relation = parse_matrix("R3.matrix", src).unwrap();
+        assert_eq!(relation.display_matrix().to_string(), src);
     }
 }

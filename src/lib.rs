@@ -47,18 +47,18 @@ pub fn load_file(filename: &str, globals: &mut Globals) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn load_relation(filename: &str, locals: &mut Locals) -> Result<String, Error> {
+pub fn load_relation(variable: &str, filename: &str, locals: &mut Locals) -> Result<(), Error> {
     let src = fs::read_to_string(filename)?;
-    let (name, relation) = parse_relation(filename, &src)?;
-    locals.assign(&name, relation);
-    Ok(name)
+    let (_name, relation) = parse_relation(filename, &src)?;
+    locals.assign(variable, relation);
+    Ok(())
 }
 
-pub fn load_matrix(filename: &str, locals: &mut Locals) -> Result<String, Error> {
+pub fn load_matrix(variable: &str, filename: &str, locals: &mut Locals) -> Result<(), Error> {
     let src = fs::read_to_string(filename)?;
-    let (name, matrix) = parser::matrix::parse_matrix(filename, &src)?;
-    locals.assign(&name, matrix);
-    Ok(name)
+    let matrix = parser::matrix::parse_matrix(filename, &src)?;
+    locals.assign(variable, matrix);
+    Ok(())
 }
 
 pub fn save_relation(locals: &Locals, name: &str, filename: &str) -> Result<(), Error> {
@@ -69,6 +69,6 @@ pub fn save_relation(locals: &Locals, name: &str, filename: &str) -> Result<(), 
 
 pub fn save_matrix(locals: &Locals, name: &str, filename: &str) -> Result<(), Error> {
     let relation = locals.get(name)?;
-    fs::write(filename, relation.display_matrix(name).to_string())?;
+    fs::write(filename, relation.display_matrix().to_string())?;
     Ok(())
 }
