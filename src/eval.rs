@@ -85,7 +85,7 @@ impl Globals {
             if v.is_empty() {
                 return Err(Error::EmptyRelation);
             }
-            Ok(v.choose_one())
+            Ok(v.choose_one() * Relation::universal((v.domain().1, v.domain().1)))
         });
         self.register_builtin("atom", |[v]| {
             if v.is_empty() {
