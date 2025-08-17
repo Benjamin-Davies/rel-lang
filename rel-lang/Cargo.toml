@@ -1,0 +1,12 @@
+[package]
+name = "rel-lang"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ariadne = { workspace = true }
+chumsky = { workspace = true }
+itertools = { workspace = true }
+pretty_assertions = { workspace = true }
+rustyline = { workspace = true }
+snafu = { workspace = true }
