@@ -2,33 +2,41 @@ use alloc::rc::Rc;
 
 use crate::manager::Cache;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     pub(crate) cache: Rc<Cache>,
-    pub(crate) kind: NodeKind,
+    pub(crate) inner: Rc<Inner>,
 }
 
 #[derive(Debug)]
-pub(crate) enum NodeKind {
+pub(crate) struct Inner {
+    pub(crate) kind: Kind,
+}
+
+#[derive(Debug)]
+pub(crate) enum Kind {
     True,
     False,
     NonTerminal {
-        then_child: Rc<Node>,
-        else_child: Rc<Node>,
+        then_child: Rc<Inner>,
+        else_child: Rc<Inner>,
     },
 }
 
 impl Drop for Node {
     fn drop(&mut self) {
-        match &self.kind {
-            NodeKind::True | NodeKind::False => {
-                // Do nothing
-            }
-            NodeKind::NonTerminal {
-                then_child,
-                else_child,
-            } => {
-                self.cache.remove(then_child, else_child);
+        if Rc::strong_count(&self.inner) == 1 {
+            // We are the last owner of this node, so we should remove it from the cache.
+            match &self.inner.kind {
+                Kind::True | Kind::False => {
+                    // No cleanup needed.
+                }
+                Kind::NonTerminal {
+                    then_child,
+                    else_child,
+                } => {
+                    self.cache.remove(then_child, else_child);
+                }
             }
         }
     }
