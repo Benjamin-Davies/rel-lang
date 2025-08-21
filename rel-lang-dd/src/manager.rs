@@ -9,14 +9,14 @@ use crate::node::{self, Kind, Node};
 
 #[derive(Debug, Clone)]
 pub struct Manager {
-    cache: Rc<Cache>,
+    pub(crate) cache: Rc<Cache>,
 }
 
 #[derive(Debug)]
 pub(crate) struct Cache {
     true_node: Rc<node::Inner>,
     false_node: Rc<node::Inner>,
-    unique_cache: RefCell<BTreeMap<(CacheKey, CacheKey), Weak<node::Inner>>>,
+    unique_cache: RefCell<BTreeMap<(u64, CacheKey, CacheKey), Weak<node::Inner>>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,12 +45,12 @@ impl Manager {
         }
     }
 
-    pub fn get_or_insert(&self, then_child: &Node, else_child: &Node) -> Node {
+    pub fn get_or_insert(&self, level: u64, then_child: &Node, else_child: &Node) -> Node {
         Node {
             cache: Rc::clone(&self.cache),
             inner: self
                 .cache
-                .get_or_insert(&then_child.inner, &else_child.inner),
+                .get_or_insert(level, &then_child.inner, &else_child.inner),
         }
     }
 }
@@ -80,53 +80,72 @@ impl Cache {
 
     pub(crate) fn get_or_insert(
         &self,
+        level: u64,
         then_child: &Rc<node::Inner>,
         else_child: &Rc<node::Inner>,
     ) -> Rc<node::Inner> {
-        match (&then_child.kind, &else_child.kind) {
-            (node::Kind::True, node::Kind::True) => return Rc::clone(&self.true_node),
-            (node::Kind::False, node::Kind::False) => return Rc::clone(&self.false_node),
-            _ => {}
+        if Rc::ptr_eq(then_child, else_child) {
+            return Rc::clone(then_child);
         }
 
-        if let Some(node) = self.get(then_child, else_child) {
+        if let Some(node) = self.get(level, then_child, else_child) {
             return node;
         }
 
         let new_node = Rc::new(node::Inner {
             kind: Kind::NonTerminal {
+                level,
                 then_child: Rc::clone(then_child),
                 else_child: Rc::clone(else_child),
             },
         });
-        self.insert(then_child, else_child, &new_node);
+        self.insert(level, then_child, else_child, &new_node);
 
         new_node
     }
 
     fn get(
         &self,
+        level: u64,
         then_child: &Rc<node::Inner>,
         else_child: &Rc<node::Inner>,
     ) -> Option<Rc<node::Inner>> {
-        let key = (CacheKey::from(then_child), CacheKey::from(else_child));
+        let key = (
+            level,
+            CacheKey::from(then_child),
+            CacheKey::from(else_child),
+        );
         let unique_cache = self.unique_cache.borrow();
         unique_cache.get(&key).and_then(Weak::upgrade)
     }
 
     fn insert(
         &self,
+        level: u64,
         then_child: &Rc<node::Inner>,
         else_child: &Rc<node::Inner>,
         node: &Rc<node::Inner>,
     ) {
-        let key = (CacheKey::from(then_child), CacheKey::from(else_child));
+        let key = (
+            level,
+            CacheKey::from(then_child),
+            CacheKey::from(else_child),
+        );
         let mut unique_cache = self.unique_cache.borrow_mut();
         unique_cache.insert(key, Rc::downgrade(node));
     }
 
-    pub(crate) fn remove(&self, then_child: &Rc<node::Inner>, else_child: &Rc<node::Inner>) {
-        let key = (CacheKey::from(then_child), CacheKey::from(else_child));
+    pub(crate) fn remove(
+        &self,
+        level: u64,
+        then_child: &Rc<node::Inner>,
+        else_child: &Rc<node::Inner>,
+    ) {
+        let key = (
+            level,
+            CacheKey::from(then_child),
+            CacheKey::from(else_child),
+        );
         let mut unique_cache = self.unique_cache.borrow_mut();
         unique_cache.remove(&key);
     }

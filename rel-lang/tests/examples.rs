@@ -10,7 +10,7 @@ macro_rules! test {
             let mut repl = Repl::new();
             let mut output = Vec::new();
             for line in input.lines() {
-                repl.process_input(line, &mut output).unwrap();
+                let _ = repl.process_input(line, &mut output).unwrap();
             }
 
             pretty_assertions::assert_eq!(

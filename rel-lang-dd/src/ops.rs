@@ -1,4 +1,4 @@
-use core::ops;
+use core::{cmp::Ordering, ops};
 
 use alloc::rc::Rc;
 
@@ -52,18 +52,35 @@ fn and(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::
         (node::Kind::True, _) => Rc::clone(rhs),
         (
             node::Kind::NonTerminal {
+                level: lhs_level,
                 then_child: lhs_then,
                 else_child: lhs_else,
             },
             node::Kind::NonTerminal {
+                level: rhs_level,
                 then_child: rhs_then,
                 else_child: rhs_else,
             },
-        ) => {
-            let new_then = and(cache, lhs_then, rhs_then);
-            let new_else = and(cache, lhs_else, rhs_else);
-            cache.get_or_insert(&new_then, &new_else)
-        }
+        ) => match lhs_level.cmp(rhs_level) {
+            Ordering::Less => {
+                // Only split the lhs node (which is evaluated first)
+                let new_then = and(cache, lhs_then, rhs);
+                let new_else = and(cache, lhs_else, rhs);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Equal => {
+                // Split both nodes (they are evaluated in parallel)
+                let new_then = and(cache, lhs_then, rhs_then);
+                let new_else = and(cache, lhs_else, rhs_else);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Greater => {
+                // Only split the rhs node (which is evaluated first)
+                let new_then = and(cache, lhs, rhs_then);
+                let new_else = and(cache, lhs, rhs_else);
+                cache.get_or_insert(*rhs_level, &new_then, &new_else)
+            }
+        },
     }
 }
 
@@ -78,18 +95,35 @@ fn or(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::I
         (node::Kind::False, _) => Rc::clone(rhs),
         (
             node::Kind::NonTerminal {
+                level: lhs_level,
                 then_child: lhs_then,
                 else_child: lhs_else,
             },
             node::Kind::NonTerminal {
+                level: rhs_level,
                 then_child: rhs_then,
                 else_child: rhs_else,
             },
-        ) => {
-            let new_then = or(cache, lhs_then, rhs_then);
-            let new_else = or(cache, lhs_else, rhs_else);
-            cache.get_or_insert(&new_then, &new_else)
-        }
+        ) => match lhs_level.cmp(rhs_level) {
+            Ordering::Less => {
+                // Only split the lhs node (which is evaluated first)
+                let new_then = or(cache, lhs_then, rhs);
+                let new_else = or(cache, lhs_else, rhs);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Equal => {
+                // Split both nodes (they are evaluated in parallel)
+                let new_then = or(cache, lhs_then, rhs_then);
+                let new_else = or(cache, lhs_else, rhs_else);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Greater => {
+                // Only split the rhs node (which is evaluated first)
+                let new_then = or(cache, lhs, rhs_then);
+                let new_else = or(cache, lhs, rhs_else);
+                cache.get_or_insert(*rhs_level, &new_then, &new_else)
+            }
+        },
     }
 }
 
@@ -98,12 +132,103 @@ fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
         node::Kind::True => cache.false_node(),
         node::Kind::False => cache.true_node(),
         node::Kind::NonTerminal {
+            level,
             then_child,
             else_child,
         } => {
             let new_then = not(cache, then_child);
             let new_else = not(cache, else_child);
-            cache.get_or_insert(&new_then, &new_else)
+            cache.get_or_insert(*level, &new_then, &new_else)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::rc::Rc;
+
+    use crate::Manager;
+
+    #[test]
+    fn test_not() {
+        let dd = Manager::new();
+        let a = dd.get_or_insert(1, &dd.true_node(), &dd.false_node());
+        let b = dd.get_or_insert(2, &dd.false_node(), &dd.true_node());
+        let root = dd.get_or_insert(0, &a, &b);
+
+        let root = !root;
+
+        assert_eq!(root.eval([false, false, false]), Some(false));
+        assert_eq!(root.eval([false, false, true]), Some(true));
+        assert_eq!(root.eval([false, true, false]), Some(false));
+        assert_eq!(root.eval([false, true, true]), Some(true));
+        assert_eq!(root.eval([true, false, false]), Some(true));
+        assert_eq!(root.eval([true, false, true]), Some(true));
+        assert_eq!(root.eval([true, true, false]), Some(false));
+        assert_eq!(root.eval([true, true, true]), Some(false));
+
+        assert_eq!(root.eval([]), None);
+        assert_eq!(root.eval([false; 2]), None);
+        assert_eq!(root.eval([true; 2]), Some(false));
+        assert_eq!(root.eval([false; 4]), Some(false));
+    }
+
+    #[test]
+    fn test_and_or() {
+        let dd = Manager::new();
+        let root = (dd.bit(0) | dd.bit(2)) & (dd.bit(1) | dd.bit(3));
+
+        assert_eq!(root.eval([false, false, false, false]), Some(false));
+        assert_eq!(root.eval([true, false, false, false]), Some(false));
+        assert_eq!(root.eval([false, true, false, false]), Some(false));
+        assert_eq!(root.eval([true, true, false, false]), Some(true));
+        assert_eq!(root.eval([false, false, true, false]), Some(false));
+        assert_eq!(root.eval([true, false, true, false]), Some(false));
+        assert_eq!(root.eval([false, true, true, false]), Some(true));
+        assert_eq!(root.eval([true, true, true, false]), Some(true));
+        assert_eq!(root.eval([false, false, false, true]), Some(false));
+        assert_eq!(root.eval([true, false, false, true]), Some(true));
+        assert_eq!(root.eval([false, true, false, true]), Some(false));
+        assert_eq!(root.eval([true, true, false, true]), Some(true));
+        assert_eq!(root.eval([false, false, true, true]), Some(true));
+        assert_eq!(root.eval([true, false, true, true]), Some(true));
+        assert_eq!(root.eval([false, true, true, true]), Some(true));
+        assert_eq!(root.eval([true, true, true, true]), Some(true));
+    }
+
+    #[test]
+    fn test_and_idempotent() {
+        let dd = Manager::new();
+        let a = dd.bit(0);
+
+        let result = a.clone() & a.clone();
+
+        assert!(Rc::ptr_eq(&result.inner, &a.inner));
+    }
+
+    #[test]
+    fn test_or_idempotent() {
+        let dd = Manager::new();
+        let a = dd.bit(0);
+
+        let result = a.clone() | a.clone();
+
+        assert!(Rc::ptr_eq(&result.inner, &a.inner));
+    }
+
+    #[test]
+    fn test_or_minterms() {
+        let dd = Manager::new();
+
+        let result = dd.minterm(0, 3) | dd.minterm(2, 3);
+
+        assert_eq!(result.eval([false, false, false]), Some(false));
+        assert_eq!(result.eval([true, false, false]), Some(true));
+        assert_eq!(result.eval([false, true, false]), Some(false));
+        assert_eq!(result.eval([true, true, false]), Some(false));
+        assert_eq!(result.eval([false, false, true]), Some(true));
+        assert_eq!(result.eval([true, false, true]), Some(false));
+        assert_eq!(result.eval([false, true, true]), Some(false));
+        assert_eq!(result.eval([true, true, true]), Some(false));
     }
 }

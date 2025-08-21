@@ -18,6 +18,8 @@ pub(crate) enum Kind {
     True,
     False,
     NonTerminal {
+        // level == variable index (i.e. variables are not permuted)
+        level: u64,
         then_child: Rc<Inner>,
         else_child: Rc<Inner>,
     },
@@ -32,10 +34,11 @@ impl Drop for Node {
                     // No cleanup needed.
                 }
                 Kind::NonTerminal {
+                    level,
                     then_child,
                     else_child,
                 } => {
-                    self.cache.remove(then_child, else_child);
+                    self.cache.remove(*level, then_child, else_child);
                 }
             }
         }

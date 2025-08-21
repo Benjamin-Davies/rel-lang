@@ -2,6 +2,8 @@
 
 extern crate alloc;
 
+mod eval;
+mod factories;
 mod manager;
 mod node;
 mod ops;
