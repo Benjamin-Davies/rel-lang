@@ -26,10 +26,11 @@ impl Relation {
         if domain.0.end == 0 || domain.1.end == 0 {
             return Self::empty(domain);
         }
-        Self {
-            domain,
-            node: dd_manager().true_node(),
-        }
+
+        // TODO: faster algorithm
+        // NOTE: the BDD must not return true for values outside the domain, otherwise subtracting
+        // every value in the domain doesn't result in a false node.
+        Self::sparse(domain.clone(), iter_domain_product(domain))
     }
 
     pub fn sparse(
@@ -69,9 +70,8 @@ impl Relation {
         self.domain
     }
 
-    pub fn converse(mut self) -> Self {
+    pub fn converse(self) -> Self {
         let (x_domain, y_domain) = self.domain;
-        self.domain = (y_domain, x_domain);
 
         // TODO: faster algorithm
         let new_domain = (y_domain.clone(), x_domain.clone());
@@ -82,7 +82,7 @@ impl Relation {
     }
 
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.node.is_false()
     }
 
     pub fn is_subset_of(&self, other: &Self) -> bool {

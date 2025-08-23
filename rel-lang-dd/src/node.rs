@@ -23,6 +23,16 @@ pub(crate) enum Kind {
     },
 }
 
+impl Node {
+    pub fn is_true(&self) -> bool {
+        matches!(self.inner.kind, Kind::True)
+    }
+
+    pub fn is_false(&self) -> bool {
+        matches!(self.inner.kind, Kind::False)
+    }
+}
+
 impl Drop for Node {
     fn drop(&mut self) {
         if Rc::strong_count(&self.inner) == 1 {
