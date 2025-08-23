@@ -50,12 +50,14 @@ fn num_vars(domain: Domain) -> u32 {
     }
 }
 
+/// Big-endian bit representation of an element in the given domain.
 fn bits(
     domain: Domain,
     n: Element,
-) -> impl IntoIterator<Item = bool> + DoubleEndedIterator<Item = bool> + ExactSizeIterator<Item = bool>
-{
-    (0..num_vars(domain)).map(move |i| (n & (1u32 << i)) != 0)
+) -> impl Iterator<Item = bool> + DoubleEndedIterator + ExactSizeIterator {
+    (0..num_vars(domain))
+        .rev()
+        .map(move |i| (n & (1u32 << i)) != 0)
 }
 
 fn bits2(

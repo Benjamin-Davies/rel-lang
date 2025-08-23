@@ -61,6 +61,19 @@ impl ops::Not for Node {
     }
 }
 
+impl Node {
+    pub fn shift(&self, diff: i64) -> Self {
+        if diff == 0 {
+            return self.clone();
+        }
+
+        Self {
+            cache: Rc::clone(&self.cache),
+            inner: shift(&self.cache, &self.inner, diff),
+        }
+    }
+}
+
 fn eq(lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> bool {
     if CacheKey::from(lhs) == CacheKey::from(rhs) {
         return true;
@@ -183,6 +196,22 @@ fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
             let new_then = not(cache, then_child);
             let new_else = not(cache, else_child);
             cache.get_or_insert(*level, &new_then, &new_else)
+        }
+    }
+}
+
+fn shift(cache: &Cache, node: &Rc<node::Inner>, diff: i64) -> Rc<node::Inner> {
+    match &node.kind {
+        node::Kind::True => cache.true_node(),
+        node::Kind::False => cache.false_node(),
+        node::Kind::NonTerminal {
+            level,
+            then_child,
+            else_child,
+        } => {
+            let new_then = shift(cache, then_child, diff);
+            let new_else = shift(cache, else_child, diff);
+            cache.get_or_insert((*level as i64 + diff) as u64, &new_then, &new_else)
         }
     }
 }

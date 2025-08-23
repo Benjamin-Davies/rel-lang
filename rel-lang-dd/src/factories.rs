@@ -1,14 +1,14 @@
 use crate::{Manager, Node, Rc};
 
 impl Manager {
-    /// Returns a node for the function: `f(b) = b[i]`
+    /// Returns a node for the function: `f(b) = b[i]`.
     pub fn bit(&self, i: u64) -> Node {
         let then_child = self.true_node();
         let else_child = self.false_node();
         self.get_or_insert(i, &then_child, &else_child)
     }
 
-    /// Returns a node for the function: `f(b) = all(b[j] if j = i else !b[j] for j < n)`
+    /// Returns a node for the function: `f(b) = all(if j = i then b[j] else !b[j] for j < n)`.
     pub fn minterm(&self, i: u64, n: u64) -> Node {
         assert!(i < n);
 
@@ -38,6 +38,29 @@ impl Manager {
         for (i, b) in v.into_iter().enumerate().rev() {
             if b {
                 node = self.cache.get_or_insert(i as u64, &node, &false_node);
+            } else {
+                node = self.cache.get_or_insert(i as u64, &false_node, &node);
+            }
+        }
+        Node {
+            inner: node,
+            cache: Rc::clone(&self.cache),
+        }
+    }
+
+    /// Returns a node for the function that ensures its argument (when interpreted as a big-endian
+    /// uint) is less than `v`.
+    pub fn less_than_eq_vec<I>(&self, v: I) -> Node
+    where
+        I: IntoIterator<Item = bool>,
+        I::IntoIter: DoubleEndedIterator + ExactSizeIterator,
+    {
+        let mut node = self.cache.true_node();
+        let true_node = self.cache.true_node();
+        let false_node = self.cache.false_node();
+        for (i, b) in v.into_iter().enumerate().rev() {
+            if b {
+                node = self.cache.get_or_insert(i as u64, &node, &true_node);
             } else {
                 node = self.cache.get_or_insert(i as u64, &false_node, &node);
             }

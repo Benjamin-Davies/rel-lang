@@ -2,7 +2,7 @@ use std::ops;
 
 use rel_lang_dd as dd;
 
-use crate::{Domain, Element, bits2, dd_manager, iter_domain_product};
+use crate::{Domain, Element, bits, bits2, dd_manager, iter_domain_product, num_vars};
 
 #[derive(Clone)]
 pub struct Relation {
@@ -27,10 +27,13 @@ impl Relation {
             return Self::empty(domain);
         }
 
-        // TODO: faster algorithm
-        // NOTE: the BDD must not return true for values outside the domain, otherwise subtracting
-        // every value in the domain doesn't result in a false node.
-        Self::sparse(domain.clone(), iter_domain_product(domain))
+        let dd = dd_manager();
+        Self {
+            domain: domain.clone(),
+            node: dd.less_than_eq_vec(bits(domain.0.clone(), domain.0.end - 1))
+                & dd.less_than_eq_vec(bits(domain.1.clone(), domain.1.end - 1))
+                    .shift(num_vars(domain.0.clone()).into()),
+        }
     }
 
     pub fn sparse(
