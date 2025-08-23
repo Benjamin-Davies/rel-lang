@@ -259,17 +259,21 @@ fn eval_stmt(
             *var = Some(value);
             ops::ControlFlow::Continue(())
         }
-        ast::Stmt::While { cond, body } => loop {
-            let cond_value = match eval(globals, locals, cond) {
-                Ok(v) => v,
-                Err(e) => return ops::ControlFlow::Break(Err(e)),
-            };
-            if cond_value.is_empty() {
-                break ControlFlow::Continue(());
-            }
+        ast::Stmt::While { cond, body } => {
+            const MAX_LOOP: usize = 1_000; // Prevent infinite loops
+            for _ in 0..MAX_LOOP {
+                let cond_value = match eval(globals, locals, cond) {
+                    Ok(v) => v,
+                    Err(e) => return ops::ControlFlow::Break(Err(e)),
+                };
+                if cond_value.is_empty() {
+                    return ControlFlow::Continue(());
+                }
 
-            eval_stmts(globals, locals, body)?;
-        },
+                eval_stmts(globals, locals, body)?;
+            }
+            panic!("While loop exceeded {MAX_LOOP} iterations");
+        }
         ast::Stmt::Return { value } => {
             let value = match eval(globals, locals, value) {
                 Ok(v) => v,
