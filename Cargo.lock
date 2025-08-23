@@ -286,6 +286,7 @@ dependencies = [
  "chumsky",
  "itertools",
  "pretty_assertions",
+ "rel-lang-dd",
  "rustyline",
  "snafu",
 ]

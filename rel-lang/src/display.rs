@@ -81,6 +81,12 @@ impl fmt::Display for DisplayMatrix<'_> {
     }
 }
 
+impl fmt::Debug for Relation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.display("Relation"), f)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parser::{matrix::parse_matrix, relation::parse_relation};

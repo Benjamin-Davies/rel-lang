@@ -8,5 +8,6 @@ ariadne = { workspace = true }
 chumsky = { workspace = true }
 itertools = { workspace = true }
 pretty_assertions = { workspace = true }
+rel-lang-dd = { workspace = true, features = ["sync"] }
 rustyline = { workspace = true }
 snafu = { workspace = true }

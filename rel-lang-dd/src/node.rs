@@ -1,6 +1,4 @@
-use alloc::rc::Rc;
-
-use crate::manager::Cache;
+use crate::{Rc, manager::Cache};
 
 #[derive(Debug, Clone)]
 pub struct Node {

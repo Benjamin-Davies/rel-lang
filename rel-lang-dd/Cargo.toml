@@ -3,4 +3,7 @@ name = "rel-lang-dd"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+[features]
+sync = ["std"]
+
+std = []

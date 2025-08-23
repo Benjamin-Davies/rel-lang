@@ -7,5 +7,6 @@ ariadne = "0.5.1"
 chumsky = "0.10.1"
 itertools = "0.14.0"
 pretty_assertions = "1.4.1"
+rel-lang-dd = { path = "rel-lang-dd" }
 rustyline = "16.0.0"
 snafu = "0.8.6"

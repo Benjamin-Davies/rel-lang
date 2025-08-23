@@ -1,11 +1,11 @@
-use core::cell::RefCell;
+use core::ops::{Deref, DerefMut};
 
-use alloc::{
-    collections::btree_map::BTreeMap,
-    rc::{Rc, Weak},
+use alloc::collections::btree_map::BTreeMap;
+
+use crate::{
+    Lock, Rc, Weak,
+    node::{self, Kind, Node},
 };
-
-use crate::node::{self, Kind, Node};
 
 #[derive(Debug, Clone)]
 pub struct Manager {
@@ -16,13 +16,21 @@ pub struct Manager {
 pub(crate) struct Cache {
     true_node: Rc<node::Inner>,
     false_node: Rc<node::Inner>,
-    unique_cache: RefCell<BTreeMap<(u64, CacheKey, CacheKey), Weak<node::Inner>>>,
+    unique_cache: Lock<UniqueCache>,
 }
+
+pub(crate) type UniqueCache = BTreeMap<(u64, CacheKey, CacheKey), Weak<node::Inner>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct CacheKey {
     ptr: *const node::Inner,
 }
+
+#[cfg(feature = "sync")]
+unsafe impl Send for CacheKey {}
+
+#[cfg(feature = "sync")]
+unsafe impl Sync for CacheKey {}
 
 impl Manager {
     pub fn new() -> Self {
@@ -64,7 +72,7 @@ impl Default for Manager {
 impl Cache {
     fn new() -> Self {
         Self {
-            unique_cache: RefCell::new(BTreeMap::new()),
+            unique_cache: Lock::new(BTreeMap::new()),
             true_node: Rc::new(node::Inner { kind: Kind::True }),
             false_node: Rc::new(node::Inner { kind: Kind::False }),
         }
@@ -115,7 +123,7 @@ impl Cache {
             CacheKey::from(then_child),
             CacheKey::from(else_child),
         );
-        let unique_cache = self.unique_cache.borrow();
+        let unique_cache = self.unique_cache();
         unique_cache.get(&key).and_then(Weak::upgrade)
     }
 
@@ -131,7 +139,7 @@ impl Cache {
             CacheKey::from(then_child),
             CacheKey::from(else_child),
         );
-        let mut unique_cache = self.unique_cache.borrow_mut();
+        let mut unique_cache = self.unique_cache_mut();
         unique_cache.insert(key, Rc::downgrade(node));
     }
 
@@ -146,8 +154,22 @@ impl Cache {
             CacheKey::from(then_child),
             CacheKey::from(else_child),
         );
-        let mut unique_cache = self.unique_cache.borrow_mut();
+        let mut unique_cache = self.unique_cache_mut();
         unique_cache.remove(&key);
+    }
+
+    fn unique_cache(&self) -> impl Deref<Target = UniqueCache> {
+        #[cfg(not(feature = "sync"))]
+        return self.unique_cache.borrow();
+        #[cfg(feature = "sync")]
+        return self.unique_cache.read().unwrap();
+    }
+
+    fn unique_cache_mut(&self) -> impl DerefMut<Target = UniqueCache> {
+        #[cfg(not(feature = "sync"))]
+        return self.unique_cache.borrow_mut();
+        #[cfg(feature = "sync")]
+        return self.unique_cache.write().unwrap();
     }
 }
 

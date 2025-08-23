@@ -1,6 +1,4 @@
-use alloc::rc::Rc;
-
-use crate::{Manager, Node};
+use crate::{Manager, Node, Rc};
 
 impl Manager {
     /// Returns a node for the function: `f(b) = b[i]`
@@ -12,7 +10,7 @@ impl Manager {
 
     /// Returns a node for the function: `f(b) = all(b[j] if j = i else !b[j] for j < n)`
     pub fn minterm(&self, i: u64, n: u64) -> Node {
-        debug_assert!(i < n);
+        assert!(i < n);
 
         let mut node = self.cache.true_node();
         let false_node = self.cache.false_node();

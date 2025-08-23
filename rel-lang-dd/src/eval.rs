@@ -1,6 +1,4 @@
-use alloc::rc::Rc;
-
-use crate::{Node, node};
+use crate::{Node, Rc, node};
 
 impl Node {
     pub fn eval(&self, variables: impl IntoIterator<Item = bool>) -> Option<bool> {

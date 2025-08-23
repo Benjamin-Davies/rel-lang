@@ -1,12 +1,20 @@
 use core::{cmp::Ordering, ops};
 
-use alloc::rc::Rc;
+use crate::Rc;
 
 use crate::{
     Node,
     manager::{Cache, CacheKey},
     node,
 };
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        eq(&self.inner, &other.inner)
+    }
+}
+
+impl Eq for Node {}
 
 impl ops::BitAnd for Node {
     type Output = Self;
@@ -16,6 +24,12 @@ impl ops::BitAnd for Node {
             cache: Rc::clone(&self.cache),
             inner: and(&self.cache, &self.inner, &rhs.inner),
         }
+    }
+}
+
+impl ops::BitAndAssign for Node {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.inner = and(&self.cache, &self.inner, &rhs.inner);
     }
 }
 
@@ -30,6 +44,12 @@ impl ops::BitOr for Node {
     }
 }
 
+impl ops::BitOrAssign for Node {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.inner = or(&self.cache, &self.inner, &rhs.inner);
+    }
+}
+
 impl ops::Not for Node {
     type Output = Self;
 
@@ -38,6 +58,30 @@ impl ops::Not for Node {
             cache: Rc::clone(&self.cache),
             inner: not(&self.cache, &self.inner),
         }
+    }
+}
+
+fn eq(lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> bool {
+    if CacheKey::from(lhs) == CacheKey::from(rhs) {
+        return true;
+    }
+
+    match (&lhs.kind, &rhs.kind) {
+        (node::Kind::True, node::Kind::True) => true,
+        (node::Kind::False, node::Kind::False) => true,
+        (
+            node::Kind::NonTerminal {
+                level: lhs_level,
+                then_child: lhs_then,
+                else_child: lhs_else,
+            },
+            node::Kind::NonTerminal {
+                level: rhs_level,
+                then_child: rhs_then,
+                else_child: rhs_else,
+            },
+        ) => lhs_level == rhs_level && eq(lhs_then, rhs_then) && eq(lhs_else, rhs_else),
+        _ => false,
     }
 }
 
@@ -145,9 +189,7 @@ fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
 
 #[cfg(test)]
 mod tests {
-    use alloc::rc::Rc;
-
-    use crate::Manager;
+    use crate::{Manager, Rc};
 
     #[test]
     fn test_not() {
