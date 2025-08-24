@@ -1,4 +1,4 @@
-use crate::{Rc, manager::Cache};
+use crate::{Rc, Weak, manager::Cache};
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -20,6 +20,10 @@ pub(crate) enum Kind {
         level: u64,
         then_child: Rc<Inner>,
         else_child: Rc<Inner>,
+        // Only used in the `Drop` implementation to remove the node from the cache.
+        // Does not need to be weak, but we're less likely to leak memory later if we use a weak reference.
+        // This is only present for this variant, otherwise the true and false singletons would need to be lazily initialized.
+        cache: Weak<Cache>,
     },
 }
 
@@ -33,20 +37,20 @@ impl Node {
     }
 }
 
-impl Drop for Node {
+impl Drop for Inner {
     fn drop(&mut self) {
-        if Rc::strong_count(&self.inner) == 1 {
-            // We are the last owner of this node, so we should remove it from the cache.
-            match &self.inner.kind {
-                Kind::True | Kind::False => {
-                    // No cleanup needed.
-                }
-                Kind::NonTerminal {
-                    level,
-                    then_child,
-                    else_child,
-                } => {
-                    self.cache.remove(*level, then_child, else_child);
+        match &self.kind {
+            Kind::True | Kind::False => {
+                // No cleanup needed.
+            }
+            Kind::NonTerminal {
+                level,
+                then_child,
+                else_child,
+                cache,
+            } => {
+                if let Some(cache) = cache.upgrade() {
+                    cache.remove(*level, then_child, else_child);
                 }
             }
         }

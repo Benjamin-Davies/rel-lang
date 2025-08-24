@@ -14,6 +14,7 @@ fn eval(node: &Rc<node::Inner>, variables: impl Iterator<Item = bool>) -> Option
             node::Kind::True => return Some(true),
             node::Kind::False => return Some(false),
             node::Kind::NonTerminal {
+                cache: _,
                 level,
                 then_child,
                 else_child,

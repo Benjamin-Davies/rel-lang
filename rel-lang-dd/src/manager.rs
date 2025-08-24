@@ -87,7 +87,7 @@ impl Cache {
     }
 
     pub(crate) fn get_or_insert(
-        &self,
+        self: &Rc<Self>,
         level: u64,
         then_child: &Rc<node::Inner>,
         else_child: &Rc<node::Inner>,
@@ -105,6 +105,7 @@ impl Cache {
                 level,
                 then_child: Rc::clone(then_child),
                 else_child: Rc::clone(else_child),
+                cache: Rc::downgrade(self),
             },
         });
         self.insert(level, then_child, else_child, &new_node);

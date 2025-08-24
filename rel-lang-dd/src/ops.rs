@@ -87,18 +87,20 @@ fn eq(lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> bool {
                 level: lhs_level,
                 then_child: lhs_then,
                 else_child: lhs_else,
+                cache: _,
             },
             node::Kind::NonTerminal {
                 level: rhs_level,
                 then_child: rhs_then,
                 else_child: rhs_else,
+                cache: _,
             },
         ) => lhs_level == rhs_level && eq(lhs_then, rhs_then) && eq(lhs_else, rhs_else),
         _ => false,
     }
 }
 
-fn and(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
+fn and(cache: &Rc<Cache>, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
     if CacheKey::from(lhs) == CacheKey::from(rhs) {
         return Rc::clone(lhs);
     }
@@ -112,11 +114,13 @@ fn and(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::
                 level: lhs_level,
                 then_child: lhs_then,
                 else_child: lhs_else,
+                cache: _,
             },
             node::Kind::NonTerminal {
                 level: rhs_level,
                 then_child: rhs_then,
                 else_child: rhs_else,
+                cache: _,
             },
         ) => match lhs_level.cmp(rhs_level) {
             Ordering::Less => {
@@ -141,7 +145,7 @@ fn and(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::
     }
 }
 
-fn or(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
+fn or(cache: &Rc<Cache>, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
     if CacheKey::from(lhs) == CacheKey::from(rhs) {
         return Rc::clone(lhs);
     }
@@ -155,11 +159,13 @@ fn or(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::I
                 level: lhs_level,
                 then_child: lhs_then,
                 else_child: lhs_else,
+                cache: _,
             },
             node::Kind::NonTerminal {
                 level: rhs_level,
                 then_child: rhs_then,
                 else_child: rhs_else,
+                cache: _,
             },
         ) => match lhs_level.cmp(rhs_level) {
             Ordering::Less => {
@@ -184,7 +190,7 @@ fn or(cache: &Cache, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::I
     }
 }
 
-fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
+fn not(cache: &Rc<Cache>, node: &Rc<node::Inner>) -> Rc<node::Inner> {
     match &node.kind {
         node::Kind::True => cache.false_node(),
         node::Kind::False => cache.true_node(),
@@ -192,6 +198,7 @@ fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
             level,
             then_child,
             else_child,
+            cache: _,
         } => {
             let new_then = not(cache, then_child);
             let new_else = not(cache, else_child);
@@ -200,7 +207,7 @@ fn not(cache: &Cache, node: &Rc<node::Inner>) -> Rc<node::Inner> {
     }
 }
 
-fn shift(cache: &Cache, node: &Rc<node::Inner>, diff: i64) -> Rc<node::Inner> {
+fn shift(cache: &Rc<Cache>, node: &Rc<node::Inner>, diff: i64) -> Rc<node::Inner> {
     match &node.kind {
         node::Kind::True => cache.true_node(),
         node::Kind::False => cache.false_node(),
@@ -208,6 +215,7 @@ fn shift(cache: &Cache, node: &Rc<node::Inner>, diff: i64) -> Rc<node::Inner> {
             level,
             then_child,
             else_child,
+            cache: _,
         } => {
             let new_then = shift(cache, then_child, diff);
             let new_else = shift(cache, else_child, diff);
