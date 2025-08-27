@@ -62,6 +62,19 @@ impl ops::Not for Node {
 }
 
 impl Node {
+    /// Returns a new node representing the function `if f then g else h`.
+    pub fn if_then_else(&self, then_value: &Self, else_value: &Self) -> Self {
+        Self {
+            cache: Rc::clone(&self.cache),
+            inner: if_then_else(
+                &self.cache,
+                &self.inner,
+                &then_value.inner,
+                &else_value.inner,
+            ),
+        }
+    }
+
     pub fn shift(&self, diff: i64) -> Self {
         if diff == 0 {
             return self.clone();
@@ -203,6 +216,64 @@ fn not(cache: &Rc<Cache>, node: &Rc<node::Inner>) -> Rc<node::Inner> {
             let new_then = not(cache, then_child);
             let new_else = not(cache, else_child);
             cache.get_or_insert(*level, &new_then, &new_else)
+        }
+    }
+}
+
+fn if_then_else(
+    cache: &Rc<Cache>,
+    f: &Rc<node::Inner>,
+    g: &Rc<node::Inner>,
+    h: &Rc<node::Inner>,
+) -> Rc<node::Inner> {
+    match (&f.kind, &g.kind, &h.kind) {
+        (node::Kind::True, _, _) => Rc::clone(g),
+        (node::Kind::False, _, _) => Rc::clone(h),
+        (_, node::Kind::True, _) => or(cache, f, h),
+        (_, node::Kind::False, _) => and(cache, &not(cache, f), h),
+        (_, _, node::Kind::True) => or(cache, &not(cache, f), g),
+        (_, _, node::Kind::False) => and(cache, f, g),
+        (
+            node::Kind::NonTerminal {
+                level: f_level,
+                then_child: f_then,
+                else_child: f_else,
+                cache: _,
+            },
+            node::Kind::NonTerminal {
+                level: g_level,
+                then_child: g_then,
+                else_child: g_else,
+                cache: _,
+            },
+            node::Kind::NonTerminal {
+                level: h_level,
+                then_child: h_then,
+                else_child: h_else,
+                cache: _,
+            },
+        ) => {
+            let min_level = f_level.min(g_level).min(h_level);
+
+            let (fv, fnv) = if f_level == min_level {
+                (f_then, f_else)
+            } else {
+                (f, f)
+            };
+            let (gv, gnv) = if g_level == min_level {
+                (g_then, g_else)
+            } else {
+                (g, g)
+            };
+            let (hv, hnv) = if h_level == min_level {
+                (h_then, h_else)
+            } else {
+                (h, h)
+            };
+
+            let new_then = if_then_else(cache, fv, gv, hv);
+            let new_else = if_then_else(cache, fnv, gnv, hnv);
+            cache.get_or_insert(*min_level, &new_then, &new_else)
         }
     }
 }
