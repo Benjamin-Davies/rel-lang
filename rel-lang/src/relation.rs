@@ -76,12 +76,17 @@ impl Relation {
     pub fn converse(self) -> Self {
         let (x_domain, y_domain) = self.domain;
 
-        // TODO: faster algorithm
-        let new_domain = (y_domain.clone(), x_domain.clone());
-        Self::sparse(
-            new_domain.clone(),
-            iter_domain_product(new_domain).filter(|&(x, y)| self.contains((y, x))),
-        )
+        let num_vars_x = num_vars(x_domain.clone());
+        let num_vars_y = num_vars(y_domain.clone());
+
+        Self {
+            domain: (y_domain.clone(), x_domain.clone()),
+            node: self.node.split_shift(
+                num_vars_x.into(),
+                num_vars_y.into(),
+                -i64::from(num_vars_x),
+            ),
+        }
     }
 
     pub fn is_empty(&self) -> bool {

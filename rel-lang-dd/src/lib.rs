@@ -16,5 +16,6 @@ mod factories;
 mod manager;
 mod node;
 mod ops;
+mod shift;
 
 pub use crate::{manager::Manager, node::Node};

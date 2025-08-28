@@ -1,11 +1,12 @@
-use crate::{Manager, Node, Rc};
+use crate::{Manager, Node, Rc, manager::Cache, node};
 
 impl Manager {
     /// Returns a node for the function: `f(b) = b[i]`.
     pub fn bit(&self, i: u64) -> Node {
-        let then_child = self.true_node();
-        let else_child = self.false_node();
-        self.get_or_insert(i, &then_child, &else_child)
+        Node {
+            cache: Rc::clone(&self.cache),
+            inner: bit(&self.cache, i),
+        }
     }
 
     /// Returns a node for the function: `f(b) = all(if j = i then b[j] else !b[j] for j < n)`.
@@ -70,6 +71,12 @@ impl Manager {
             cache: Rc::clone(&self.cache),
         }
     }
+}
+
+pub(crate) fn bit(cache: &Rc<Cache>, i: u64) -> Rc<node::Inner> {
+    let then_child = cache.true_node();
+    let else_child = cache.false_node();
+    cache.get_or_insert(i, &then_child, &else_child)
 }
 
 #[cfg(test)]

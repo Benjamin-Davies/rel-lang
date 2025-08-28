@@ -91,17 +91,6 @@ impl Node {
             ),
         }
     }
-
-    pub fn shift(&self, diff: i64) -> Self {
-        if diff == 0 {
-            return self.clone();
-        }
-
-        Self {
-            cache: Rc::clone(&self.cache),
-            inner: shift(&self.cache, &self.inner, diff),
-        }
-    }
 }
 
 fn eq(lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> bool {
@@ -283,7 +272,7 @@ fn not(cache: &Rc<Cache>, node: &Rc<node::Inner>) -> Rc<node::Inner> {
     }
 }
 
-fn if_then_else(
+pub(crate) fn if_then_else(
     cache: &Rc<Cache>,
     f: &Rc<node::Inner>,
     g: &Rc<node::Inner>,
@@ -337,23 +326,6 @@ fn if_then_else(
             let new_then = if_then_else(cache, fv, gv, hv);
             let new_else = if_then_else(cache, fnv, gnv, hnv);
             cache.get_or_insert(*min_level, &new_then, &new_else)
-        }
-    }
-}
-
-fn shift(cache: &Rc<Cache>, node: &Rc<node::Inner>, diff: i64) -> Rc<node::Inner> {
-    match &node.kind {
-        node::Kind::True => cache.true_node(),
-        node::Kind::False => cache.false_node(),
-        node::Kind::NonTerminal {
-            level,
-            then_child,
-            else_child,
-            cache: _,
-        } => {
-            let new_then = shift(cache, then_child, diff);
-            let new_else = shift(cache, else_child, diff);
-            cache.get_or_insert((*level as i64 + diff) as u64, &new_then, &new_else)
         }
     }
 }
