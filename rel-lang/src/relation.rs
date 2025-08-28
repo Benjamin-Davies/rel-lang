@@ -147,7 +147,7 @@ impl ops::Neg for Relation {
 
     fn neg(self) -> Self::Output {
         Self {
-            node: !self.node,
+            node: self.node ^ Self::universal(self.domain).node,
             ..self
         }
     }

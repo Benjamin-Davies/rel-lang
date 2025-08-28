@@ -50,6 +50,23 @@ impl ops::BitOrAssign for Node {
     }
 }
 
+impl ops::BitXor for Node {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self {
+            cache: Rc::clone(&self.cache),
+            inner: xor(&self.cache, &self.inner, &rhs.inner),
+        }
+    }
+}
+
+impl ops::BitXorAssign for Node {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        self.inner = xor(&self.cache, &self.inner, &rhs.inner);
+    }
+}
+
 impl ops::Not for Node {
     type Output = Self;
 
@@ -197,6 +214,52 @@ fn or(cache: &Rc<Cache>, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<nod
                 // Only split the rhs node (which is evaluated first)
                 let new_then = or(cache, lhs, rhs_then);
                 let new_else = or(cache, lhs, rhs_else);
+                cache.get_or_insert(*rhs_level, &new_then, &new_else)
+            }
+        },
+    }
+}
+
+fn xor(cache: &Rc<Cache>, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
+    if CacheKey::from(lhs) == CacheKey::from(rhs) {
+        return cache.false_node();
+    }
+
+    match (&lhs.kind, &rhs.kind) {
+        (node::Kind::True, _) => not(cache, rhs),
+        (node::Kind::False, _) => Rc::clone(rhs),
+        (_, node::Kind::True) => not(cache, lhs),
+        (_, node::Kind::False) => Rc::clone(lhs),
+        (
+            node::Kind::NonTerminal {
+                level: lhs_level,
+                then_child: lhs_then,
+                else_child: lhs_else,
+                cache: _,
+            },
+            node::Kind::NonTerminal {
+                level: rhs_level,
+                then_child: rhs_then,
+                else_child: rhs_else,
+                cache: _,
+            },
+        ) => match lhs_level.cmp(rhs_level) {
+            Ordering::Less => {
+                // Only split the lhs node (which is evaluated first)
+                let new_then = xor(cache, lhs_then, rhs);
+                let new_else = xor(cache, lhs_else, rhs);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Equal => {
+                // Split both nodes (they are evaluated in parallel)
+                let new_then = xor(cache, lhs_then, rhs_then);
+                let new_else = xor(cache, lhs_else, rhs_else);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Greater => {
+                // Only split the rhs node (which is evaluated first)
+                let new_then = xor(cache, lhs, rhs_then);
+                let new_else = xor(cache, lhs, rhs_else);
                 cache.get_or_insert(*rhs_level, &new_then, &new_else)
             }
         },
