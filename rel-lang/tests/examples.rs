@@ -57,6 +57,7 @@ Relation 'R1' loaded successfully from 'examples/R1.ascii'
 4 : 2, 3, 4, 5
 "#
 );
+
 test!(
     test_example_rtc2,
     r#"
@@ -130,5 +131,65 @@ Relation 'R1' loaded successfully from 'examples/R1.ascii'
 3 : 2, 3, 4, 5
 4 : 2, 3, 4, 5
 5 : 5
+"#
+);
+
+test!(
+    test_example_reachable1,
+    r#"
+.load prog examples/Examples.prog
+.load rel R1 examples/R1.ascii
+.load rel R2 examples/R2.ascii
+Reachable1(R1, R2)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+Relation 'R2' loaded successfully from 'examples/R2.ascii'
+<expr> (5, 5)
+2 : 1, 2, 3, 4, 5
+3 : 1, 2, 3, 4, 5
+4 : 1, 2, 3, 4, 5
+5 : 1, 2, 3, 4, 5
+"#
+);
+
+test!(
+    test_example_reachable2,
+    r#"
+.load prog examples/Examples.prog
+.load rel R1 examples/R1.ascii
+.load rel R2 examples/R2.ascii
+Reachable2(R1, R2)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+Relation 'R2' loaded successfully from 'examples/R2.ascii'
+<expr> (5, 5)
+2 : 1, 2, 3, 4, 5
+3 : 1, 2, 3, 4, 5
+4 : 1, 2, 3, 4, 5
+5 : 1, 2, 3, 4, 5
+"#
+);
+
+test!(
+    test_example_reachable3,
+    r#"
+.load prog examples/Examples.prog
+.load rel R1 examples/R1.ascii
+.load rel R2 examples/R2.ascii
+Reachable3(R1, R2)
+"#,
+    r#"
+Program loaded successfully from 'examples/Examples.prog'
+Relation 'R1' loaded successfully from 'examples/R1.ascii'
+Relation 'R2' loaded successfully from 'examples/R2.ascii'
+<expr> (5, 5)
+2 : 1, 2, 3, 4, 5
+3 : 1, 2, 3, 4, 5
+4 : 1, 2, 3, 4, 5
+5 : 1, 2, 3, 4, 5
 "#
 );

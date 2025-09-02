@@ -79,6 +79,14 @@ impl ops::Not for Node {
 }
 
 impl Node {
+    /// Returns a new node representing the function `f -> g`.
+    pub fn implies(&self, rhs: &Self) -> Self {
+        Self {
+            cache: Rc::clone(&self.cache),
+            inner: implies(&self.cache, &self.inner, &rhs.inner),
+        }
+    }
+
     /// Returns a new node representing the function `if f then g else h`.
     pub fn if_then_else(&self, then_value: &Self, else_value: &Self) -> Self {
         Self {
@@ -269,6 +277,51 @@ fn not(cache: &Rc<Cache>, node: &Rc<node::Inner>) -> Rc<node::Inner> {
             let new_else = not(cache, else_child);
             cache.get_or_insert(*level, &new_then, &new_else)
         }
+    }
+}
+
+fn implies(cache: &Rc<Cache>, lhs: &Rc<node::Inner>, rhs: &Rc<node::Inner>) -> Rc<node::Inner> {
+    if CacheKey::from(lhs) == CacheKey::from(rhs) {
+        return cache.true_node();
+    }
+
+    match (&lhs.kind, &rhs.kind) {
+        (node::Kind::False, _) | (_, node::Kind::True) => cache.true_node(),
+        (_, node::Kind::False) => not(cache, lhs),
+        (node::Kind::True, _) => Rc::clone(rhs),
+        (
+            node::Kind::NonTerminal {
+                level: lhs_level,
+                then_child: lhs_then,
+                else_child: lhs_else,
+                cache: _,
+            },
+            node::Kind::NonTerminal {
+                level: rhs_level,
+                then_child: rhs_then,
+                else_child: rhs_else,
+                cache: _,
+            },
+        ) => match lhs_level.cmp(rhs_level) {
+            Ordering::Less => {
+                // Only split the lhs node (which is evaluated first)
+                let new_then = implies(cache, lhs_then, rhs);
+                let new_else = implies(cache, lhs_else, rhs);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Equal => {
+                // Split both nodes (they are evaluated in parallel)
+                let new_then = implies(cache, lhs_then, rhs_then);
+                let new_else = implies(cache, lhs_else, rhs_else);
+                cache.get_or_insert(*lhs_level, &new_then, &new_else)
+            }
+            Ordering::Greater => {
+                // Only split the rhs node (which is evaluated first)
+                let new_then = implies(cache, lhs, rhs_then);
+                let new_else = implies(cache, lhs, rhs_else);
+                cache.get_or_insert(*rhs_level, &new_then, &new_else)
+            }
+        },
     }
 }
 

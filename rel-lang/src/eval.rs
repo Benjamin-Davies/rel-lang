@@ -104,6 +104,15 @@ impl Globals {
             }
             Ok(Relation::from(lhs == rhs))
         });
+        self.register_builtin("incl", |[lhs, rhs]| {
+            if lhs.domain() != rhs.domain() {
+                return Err(Error::DomainMismatch {
+                    expected: lhs.domain(),
+                    actual: rhs.domain(),
+                });
+            }
+            Ok(Relation::from(lhs.is_subset_of(&rhs)))
+        });
     }
 
     fn register_builtin<const N: usize>(

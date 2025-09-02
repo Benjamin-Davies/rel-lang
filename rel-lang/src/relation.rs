@@ -99,7 +99,7 @@ impl Relation {
             "domains {:?} and {:?} do not match",
             self.domain, other.domain,
         );
-        todo!();
+        self.node.implies(&other.node).is_true()
     }
 
     pub fn contains(&self, pair: (Element, Element)) -> bool {

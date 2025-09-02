@@ -219,7 +219,7 @@ where
             });
 
         let negate = just(Token::Op('-'))
-            .ignore_then(expr)
+            .ignore_then(inner_expr.clone())
             .map(|value| Expr::Negate {
                 value: Box::new(value),
             });
