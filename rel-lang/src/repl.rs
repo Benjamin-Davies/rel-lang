@@ -20,6 +20,12 @@ pub struct State {
     pub last_result: Option<Relation>,
 }
 
+impl Default for Repl {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Repl {
     pub fn new() -> Self {
         Self {

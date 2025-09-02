@@ -19,9 +19,7 @@ fn eval(node: &Rc<node::Inner>, variables: impl Iterator<Item = bool>) -> Option
                 then_child,
                 else_child,
             } => {
-                let (_, variable) = (&mut variables)
-                    .skip_while(|&(i, _)| i as u64 != *level)
-                    .next()?;
+                let (_, variable) = variables.find(|&(i, _)| i as u64 == *level)?;
                 if variable {
                     current_node = Rc::clone(then_child);
                 } else {

@@ -29,10 +29,10 @@ impl Relation {
 
         let dd = dd_manager();
         Self {
-            domain: domain.clone(),
-            node: dd.less_than_eq_vec(bits(domain.0.clone(), domain.0.end - 1))
-                & dd.less_than_eq_vec(bits(domain.1.clone(), domain.1.end - 1))
-                    .shift(num_vars(domain.0.clone()).into()),
+            domain,
+            node: dd.less_than_eq_vec(bits(domain.0, domain.0.end - 1))
+                & dd.less_than_eq_vec(bits(domain.1, domain.1.end - 1))
+                    .shift(num_vars(domain.0).into()),
         }
     }
 
@@ -76,11 +76,11 @@ impl Relation {
     pub fn converse(self) -> Self {
         let (x_domain, y_domain) = self.domain;
 
-        let num_vars_x = num_vars(x_domain.clone());
-        let num_vars_y = num_vars(y_domain.clone());
+        let num_vars_x = num_vars(x_domain);
+        let num_vars_y = num_vars(y_domain);
 
         Self {
-            domain: (y_domain.clone(), x_domain.clone()),
+            domain: (y_domain, x_domain),
             node: self.node.split_shift(
                 num_vars_x.into(),
                 num_vars_y.into(),
@@ -103,16 +103,14 @@ impl Relation {
     }
 
     pub fn contains(&self, pair: (Element, Element)) -> bool {
-        debug_assert_eq!(
+        debug_assert!(
             self.domain.0.contains(&pair.0),
-            true,
             "lhs of element {:?} is not in domain {:?}",
             pair,
             self.domain.0
         );
-        debug_assert_eq!(
+        debug_assert!(
             self.domain.1.contains(&pair.1),
-            true,
             "rhs of element {:?} is not in domain {:?}",
             pair,
             self.domain.1
@@ -122,7 +120,7 @@ impl Relation {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (Element, Element)> {
-        iter_domain_product(self.domain.clone()).filter(move |&pair| self.contains(pair))
+        iter_domain_product(self.domain).filter(move |&pair| self.contains(pair))
     }
 
     pub fn collapse_left(&self) -> Relation {
@@ -201,10 +199,10 @@ impl ops::Mul for Relation {
         );
 
         // TODO: faster algorithm
-        let new_domain = (self.domain.0.clone(), rhs.domain.1.clone());
+        let new_domain = (self.domain.0, rhs.domain.1);
         let inner_dim = self.domain.1.end;
         Self::sparse(
-            new_domain.clone(),
+            new_domain,
             iter_domain_product(new_domain).filter(|&(i, k)| {
                 (0..inner_dim).any(|j| self.contains((i, j)) && rhs.contains((j, k)))
             }),

@@ -16,10 +16,11 @@ const HELP_MESSAGE: &str = "Available commands:\n\
 #[derive(Default)]
 pub struct Node {
     pub edges: BTreeMap<Edge, Node>,
-    pub func: Option<
-        Box<dyn Fn(&mut State, &mut dyn io::Write, &[&str]) -> io::Result<ops::ControlFlow<()>>>,
-    >,
+    pub func: Option<CommandFn>,
 }
+
+type CommandFn =
+    Box<dyn Fn(&mut State, &mut dyn io::Write, &[&str]) -> io::Result<ops::ControlFlow<()>>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Edge {

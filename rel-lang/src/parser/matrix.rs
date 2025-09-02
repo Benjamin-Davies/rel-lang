@@ -29,7 +29,6 @@ fn matrix<'src>() -> impl Parser<'src, &'src str, Relation, extra::Err<Rich<'src
         .then_ignore(just("|\n"));
 
     header
-        .clone()
         .then(
             line.repeated()
                 .at_most(u32::MAX as usize)
@@ -37,7 +36,8 @@ fn matrix<'src>() -> impl Parser<'src, &'src str, Relation, extra::Err<Rich<'src
         )
         .then_ignore(header)
         .map(|(width, lines)| {
-            let relation = Relation::sparse(
+            
+            Relation::sparse(
                 (..width as u32, ..lines.len() as u32),
                 lines.into_iter().enumerate().flat_map(|(i, cells)| {
                     cells
@@ -46,8 +46,7 @@ fn matrix<'src>() -> impl Parser<'src, &'src str, Relation, extra::Err<Rich<'src
                         .filter(|&(_, cell)| cell)
                         .map(move |(j, _)| (i as u32, j as u32))
                 }),
-            );
-            relation
+            )
         })
 }
 

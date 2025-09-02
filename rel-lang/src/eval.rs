@@ -321,7 +321,7 @@ pub fn eval(globals: &Globals, locals: &Locals, expr: &ast::Expr) -> Result<Rela
                     name: func.to_owned(),
                 })?;
             let args = args
-                .into_iter()
+                .iter()
                 .map(|arg| eval(globals, locals, arg))
                 .collect::<Result<_, _>>()?;
             func.call(globals, args)

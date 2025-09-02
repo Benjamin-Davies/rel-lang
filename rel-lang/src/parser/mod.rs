@@ -233,7 +233,7 @@ where
             .map(|terms: Vec<_>| {
                 let mut terms = terms.into_iter();
                 let first_term = terms.next().expect("At least one term in product");
-                terms.into_iter().fold(first_term, |l, r| Expr::BinExpr {
+                terms.fold(first_term, |l, r| Expr::BinExpr {
                     left: Box::new(l),
                     op: BinOp::Compose,
                     right: Box::new(r),

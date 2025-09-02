@@ -54,7 +54,7 @@ fn num_vars(domain: Domain) -> u32 {
 fn bits(
     domain: Domain,
     n: Element,
-) -> impl Iterator<Item = bool> + DoubleEndedIterator + ExactSizeIterator {
+) -> impl DoubleEndedIterator<Item = bool> + ExactSizeIterator {
     (0..num_vars(domain))
         .rev()
         .map(move |i| (n & (1u32 << i)) != 0)
@@ -63,14 +63,14 @@ fn bits(
 fn bits2(
     domain: (Domain, Domain),
     pair: (Element, Element),
-) -> impl Iterator<Item = bool> + DoubleEndedIterator + ExactSizeIterator {
+) -> impl DoubleEndedIterator<Item = bool> + ExactSizeIterator {
     chain_exact(bits(domain.0, pair.0), bits(domain.1, pair.1))
 }
 
 fn chain_exact<T, I, J>(
     i: I,
     j: J,
-) -> impl Iterator<Item = T> + DoubleEndedIterator + ExactSizeIterator
+) -> impl DoubleEndedIterator<Item = T> + ExactSizeIterator
 where
     I: Iterator<Item = T> + DoubleEndedIterator + ExactSizeIterator,
     J: Iterator<Item = T> + DoubleEndedIterator + ExactSizeIterator,
